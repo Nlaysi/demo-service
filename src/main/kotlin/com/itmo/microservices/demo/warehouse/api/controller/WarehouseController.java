@@ -1,7 +1,7 @@
 package com.itmo.microservices.demo.warehouse.api.controller;
 
 import com.itmo.microservices.demo.warehouse.api.model.ItemQuantityChangeRequest;
-import com.itmo.microservices.demo.warehouse.impl.entity.CatalogItem;
+import com.itmo.microservices.demo.warehouse.impl.entity.CatalogItem2;
 import com.itmo.microservices.demo.warehouse.impl.entity.WarehouseItem;
 import com.itmo.microservices.demo.warehouse.impl.service.WarehouseService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -43,18 +43,18 @@ public class WarehouseController {
     }
 
     @PostMapping(value = "/addItem", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<String> addItem(@RequestBody CatalogItem item) {
+    public ResponseEntity<String> addItem(@RequestBody CatalogItem2 item) {
         return service.addItem(item);
     }
 
     @GetMapping(value = "/getItems")
-    public ResponseEntity<List<CatalogItem>> getItemsList() {
+    public ResponseEntity<List<CatalogItem2>> getItemsList() {
         System.out.println();
         return service.getItemsList();
     }
 
     @GetMapping(value = "/getItem")
-    public ResponseEntity<CatalogItem> getItem(@RequestParam("id") UUID id) {
+    public ResponseEntity<CatalogItem2> getItem(@RequestParam("id") UUID id) {
         return service.getItem(id);
     }
 

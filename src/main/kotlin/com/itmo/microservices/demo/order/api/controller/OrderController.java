@@ -1,6 +1,6 @@
 package com.itmo.microservices.demo.order.api.controller;
 
-import com.itmo.microservices.demo.order.api.dto.Order;
+import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,8 +29,8 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200", content = {@Content}),
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public void createOrder(@RequestBody Order order) {
-        service.createOrder(order);
+    public OrderDto createOrder() {
+        return service.createOrder();
     }
 
     @GetMapping("/{orderId}")
@@ -70,7 +70,7 @@ public class OrderController {
 
     @PostMapping("/{orderId}/delivery?slot={slot_in_sec}")
     @Operation(
-            summary = "Deliveru time selection",
+            summary = "Delivery time selection",
             responses = {
                     @ApiResponse(description = "OK", responseCode = "200"),
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},

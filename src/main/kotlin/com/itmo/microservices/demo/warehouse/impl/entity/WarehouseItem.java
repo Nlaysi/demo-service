@@ -15,12 +15,12 @@ public class WarehouseItem {
     @MapsId
     @OneToOne
     @JoinColumn(name = "id")
-    private CatalogItem item;
+    private CatalogItem2 item;
 
     private Integer amount;
     private Integer booked;
 
-    public WarehouseItem(CatalogItem item, Integer amount, Integer booked) {
+    public WarehouseItem(CatalogItem2 item, Integer amount, Integer booked) {
         this.item = item;
         this.amount = amount;
         this.booked = booked;
@@ -38,11 +38,11 @@ public class WarehouseItem {
         this.id = id;
     }
 
-    public CatalogItem getItem() {
+    public CatalogItem2 getItem() {
         return item;
     }
 
-    public void setItem(CatalogItem item) {
+    public void setItem(CatalogItem2 item) {
         this.item = item;
     }
 

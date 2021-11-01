@@ -3,10 +3,10 @@ package com.itmo.microservices.demo.warehouse.impl.service;
 import com.itmo.microservices.commonlib.annotations.InjectEventLogger;
 import com.itmo.microservices.demo.warehouse.api.model.ItemQuantityChangeRequest;
 import com.itmo.microservices.demo.warehouse.api.model.ResponseMessage;
-import com.itmo.microservices.demo.warehouse.impl.entity.CatalogItem;
+import com.itmo.microservices.demo.warehouse.impl.entity.CatalogItem2;
 import com.itmo.microservices.demo.warehouse.impl.entity.WarehouseItem;
-import com.itmo.microservices.demo.warehouse.impl.logging.WarehouseServiceNotableEvents;
-import com.itmo.microservices.demo.warehouse.impl.repository.CatalogItemRepository;
+//import com.itmo.microservices.demo.warehouse.impl.logging.WarehouseServiceNotableEvents;
+import com.itmo.microservices.demo.warehouse.impl.repository.CatalogItemRepository2;
 import com.itmo.microservices.demo.warehouse.impl.repository.WarehouseItemRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,7 @@ import java.util.UUID;
 public class WarehouseService {
 
     private final WarehouseItemRepository warehouseRepository;
-    private final CatalogItemRepository catalogRepository;
+    private final CatalogItemRepository2 catalogRepository;
 
     @InjectEventLogger
     private EventLogger eventLogger;
@@ -30,7 +30,7 @@ public class WarehouseService {
     }
 
 
-    public WarehouseService(WarehouseItemRepository warehouseRepository, CatalogItemRepository catalogRepository) {
+    public WarehouseService(WarehouseItemRepository warehouseRepository, CatalogItemRepository2 catalogRepository) {
         this.warehouseRepository = warehouseRepository;
         this.catalogRepository = catalogRepository;
     }
@@ -42,7 +42,7 @@ public class WarehouseService {
             WarehouseItem item = warehouseRepository.findWarehouseItemById(values.getId());
             item.setAmount(item.getAmount() + values.getAmount());
 
-            eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
+            //eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
             warehouseRepository.save(item);
             return new ResponseEntity<>( ResponseMessage.OK_UPDATED.TEXT(), HttpStatus.OK);
         }
@@ -59,7 +59,7 @@ public class WarehouseService {
             else
                 return new ResponseEntity<>( ResponseMessage.BAD_QUANTITY.TEXT(), HttpStatus.BAD_REQUEST);
 
-            eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
+            //eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
             warehouseRepository.save(item);
             return new ResponseEntity<>( ResponseMessage.OK_UPDATED.TEXT(), HttpStatus.OK);
         }
@@ -76,7 +76,7 @@ public class WarehouseService {
             else
                 return new ResponseEntity<>( ResponseMessage.BAD_QUANTITY.TEXT(), HttpStatus.BAD_REQUEST);
 
-            eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
+            //eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
             warehouseRepository.save(item);
             return new ResponseEntity<>( ResponseMessage.OK_UPDATED.TEXT(), HttpStatus.OK);
         }
@@ -93,33 +93,33 @@ public class WarehouseService {
             else
                 return new ResponseEntity<>( ResponseMessage.BAD_QUANTITY.TEXT(), HttpStatus.BAD_REQUEST);
 
-            eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
+            //eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.getId());
             warehouseRepository.save(item);
             return new ResponseEntity<>( ResponseMessage.OK_UPDATED.TEXT(), HttpStatus.OK);
         }
     }
 
-    public ResponseEntity<String> addItem(CatalogItem item){
+    public ResponseEntity<String> addItem(CatalogItem2 item){
         if(ValidationError())
             return new ResponseEntity<>( ResponseMessage.BAD_REQUEST.TEXT(), HttpStatus.BAD_REQUEST);
 
-        CatalogItem catalogItem = catalogRepository.save(item);
-        WarehouseItem warehouseItem = new WarehouseItem(catalogItem, 0, 0);
+        CatalogItem2 catalogItem2 = catalogRepository.save(item);
+        WarehouseItem warehouseItem = new WarehouseItem(catalogItem2, 0, 0);
 
-        eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_CREATED, catalogItem.getId());
+        //eventLogger.info(WarehouseServiceNotableEvents.I_ITEM_CREATED, catalogItem2.getId());
         warehouseRepository.save(warehouseItem);
 
         return new ResponseEntity<>( ResponseMessage.OK_CREATED.TEXT(), HttpStatus.OK);
     }
 
-    public ResponseEntity<List<CatalogItem>> getItemsList() {
+    public ResponseEntity<List<CatalogItem2>> getItemsList() {
 
-        List<CatalogItem> list = catalogRepository.findAll();
+        List<CatalogItem2> list = catalogRepository.findAll();
 
         return new ResponseEntity<>( list, HttpStatus.OK);
     }
 
-    public ResponseEntity<CatalogItem> getItem(UUID id) {
+    public ResponseEntity<CatalogItem2> getItem(UUID id) {
         return new ResponseEntity<>( catalogRepository.findCatalogItemById(id), HttpStatus.OK);
     }
 

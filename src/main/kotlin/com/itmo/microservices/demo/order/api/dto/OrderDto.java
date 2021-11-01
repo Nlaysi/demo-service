@@ -13,14 +13,14 @@ import java.util.UUID;
 @Data
 @Builder
 @AllArgsConstructor
-public class Order {
+public class OrderDto {
     private UUID uuid;
     private LocalDateTime timeCreated;
-    private Map<OrderItem, Integer> itemList;
+    private Map<OrderItemDto, Integer> itemList;
     private OrderStatus status;
     private Timestamp deliveryInfo;
 
-    public Order() {
+    public OrderDto() {
         this.uuid = UUID.randomUUID();
         this.timeCreated = LocalDateTime.now();
         this.itemList = new HashMap<>();
