@@ -7,6 +7,7 @@ import javax.validation.constraints.Min
 import javax.validation.constraints.NotNull
 
 @Entity
+@Table(name = "catalog_items")
 class CatalogItem {
     @Id
     @GeneratedValue

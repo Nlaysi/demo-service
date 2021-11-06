@@ -5,6 +5,7 @@ import java.util.UUID
 import javax.persistence.*
 
 @Entity
+@Table(name = "warehouse_items")
 class WarehouseItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
