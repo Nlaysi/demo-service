@@ -29,6 +29,7 @@ class CatalogItem {
     var price = 100
 
     constructor() {}
+
     constructor(
         id: UUID?,
         warehouseItem: WarehouseItem?,
@@ -38,6 +39,12 @@ class CatalogItem {
     ) {
         this.id = id
         this.warehouseItem = warehouseItem
+        this.title = title
+        this.description = description
+        this.price = price
+    }
+
+    constructor(title: String?, description: String?, price: Int) {
         this.title = title
         this.description = description
         this.price = price

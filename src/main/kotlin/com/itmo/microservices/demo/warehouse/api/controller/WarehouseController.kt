@@ -2,6 +2,7 @@ package com.itmo.microservices.demo.warehouse.api.controller
 
 import com.itmo.microservices.demo.warehouse.api.exception.ItemIsNotExistException
 import com.itmo.microservices.demo.warehouse.api.exception.ItemQuantityException
+import com.itmo.microservices.demo.warehouse.api.model.CatalogItemModel
 import com.itmo.microservices.demo.warehouse.impl.service.WarehouseService
 import com.itmo.microservices.demo.warehouse.api.model.ItemQuantityRequestDTO
 import com.itmo.microservices.demo.warehouse.api.model.ItemResponseDTO
@@ -151,9 +152,9 @@ class WarehouseController(private val service: WarehouseService) {
         summary = "Execute a request to add new item",
         security = [SecurityRequirement(name = "bearerAuth")]
     )
-    fun addItem(@Valid @RequestBody item: CatalogItem): ResponseEntity<ItemResponseDTO> {
+    fun addItem(@Valid @RequestBody item: CatalogItemModel): ResponseEntity<ItemResponseDTO> {
         try {
-            service.addItem(item)
+            service.addItem(CatalogItem(item.description, item.title, item.price))
         }
         catch (e: Exception) {
             return ResponseEntity(ItemResponseDTO(400, e.message!!), HttpStatus.BAD_REQUEST)
