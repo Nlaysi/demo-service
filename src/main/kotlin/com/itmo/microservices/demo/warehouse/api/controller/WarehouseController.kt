@@ -220,4 +220,28 @@ class WarehouseController(private val service: WarehouseService) {
 
         return ResponseEntity(itemModel, HttpStatus.OK)
     }
+
+
+    @GetMapping(value = ["/getItemsQuantity"])
+    @Operation(
+        summary = "Get a items quantity by array of id",
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    fun getItemsQuantity(@RequestParam("id") id: List<UUID>?): ResponseEntity<List<WarehouseItemDTO>> {
+        val itemModels: ArrayList<WarehouseItemDTO> = ArrayList()
+        try {
+            for (model_id in id!!){
+                val item: WarehouseItem = service.getItemQuantity(model_id)
+                itemModels.add(WarehouseItemDTO(model_id, item.amount!!, item.booked!!))
+            }
+        }
+        catch (e: ItemIsNotExistException) {
+            return ResponseEntity(null, HttpStatus.NOT_FOUND)
+        }
+        catch (e: Exception) {
+            return ResponseEntity(null, HttpStatus.BAD_REQUEST)
+        }
+
+        return ResponseEntity(itemModels, HttpStatus.OK)
+    }
 }
