@@ -1,10 +1,14 @@
 package com.itmo.microservices.demo.order.impl.service;
 
-import java.util.UUID;
+import com.itmo.microservices.demo.order.api.dto.CatalogItemDto;
+
+import java.util.List;
 
 public interface ICatalogItemService {
-    void addItem(String title,
+    CatalogItemDto addItem(String title,
                  String description,
                  int price,
                  int amount);
+
+    List<CatalogItemDto>  getAllItems();
 }

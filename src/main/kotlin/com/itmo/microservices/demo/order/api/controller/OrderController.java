@@ -3,6 +3,7 @@ package com.itmo.microservices.demo.order.api.controller;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -40,11 +41,11 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200", content = {@Content}),
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public void getOrder(@PathVariable("orderId") UUID uuid) {
-        service.getOrderById(uuid);
+    public OrderDto getOrder(@PathVariable("orderId") UUID uuid) {
+        return service.getOrderById(uuid);
     }
 
-    @PutMapping("/{orderId}/items/{itemId}?amount={amount}")
+    @PutMapping("/{orderId}/items")
     @Operation(
             summary = "Put the item in the cart",
             responses = {
@@ -52,8 +53,8 @@ public class OrderController {
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public void updateOrder(@PathVariable("orderId") UUID orderId,
-                            @PathVariable("itemId") UUID itemId,
-                            @PathVariable("amount") int amount) {
+                            @RequestParam UUID itemId,
+                            @RequestParam(value = "amount", defaultValue = "1") int amount) {
         service.putItemToOrder(orderId, itemId, amount);
     }
 

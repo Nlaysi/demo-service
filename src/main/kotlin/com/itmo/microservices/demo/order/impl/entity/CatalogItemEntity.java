@@ -1,5 +1,6 @@
 package com.itmo.microservices.demo.order.impl.entity;
 
+import com.itmo.microservices.demo.order.api.dto.CatalogItemDto;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -18,9 +19,8 @@ import java.util.UUID;
 @Setter
 @ToString
 @RequiredArgsConstructor
-public class CatalogItem {
+public class CatalogItemEntity {
     @Id
-    @GeneratedValue
     private UUID uuid;
 
     private String title;
@@ -29,23 +29,30 @@ public class CatalogItem {
     private int amount;
 
     @ManyToOne
-    private Order order;
+    private OrderEntity order;
 
-    public CatalogItem(UUID randomUUID, String title, String description, int price, int amount) {
+    public CatalogItemEntity(UUID randomUUID, String title, String description, int price, int amount) {
         this.uuid = randomUUID;
         this.title = title;
+        this.description = description;
+        this.price = price;
+        this.amount = amount;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        CatalogItem that = (CatalogItem) o;
+        CatalogItemEntity that = (CatalogItemEntity) o;
         return uuid != null && Objects.equals(uuid, that.uuid);
     }
 
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public CatalogItemDto toModel() {
+        return new CatalogItemDto(this.uuid, this.title, this.description, this.price, this.amount);
     }
 }
