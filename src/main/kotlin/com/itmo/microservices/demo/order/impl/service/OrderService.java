@@ -26,15 +26,13 @@ import java.util.stream.Collectors;
 @Service
 public class OrderService implements IOrderService {
     private final OrderRepository repository;
-    private final CatalogItemRepository catalogItemRepository;
     private final OrderItemRepository orderItemRepository;
 
     private static final String API_URL = "http://77.234.215.138:30019/api/";
 
     @Autowired
-    public OrderService(OrderRepository repository, CatalogItemRepository catalogItemRepository, OrderItemRepository orderItemRepository) {
+    public OrderService(OrderRepository repository, OrderItemRepository orderItemRepository) {
         this.repository = repository;
-        this.catalogItemRepository = catalogItemRepository;
         this.orderItemRepository = orderItemRepository;
     }
 

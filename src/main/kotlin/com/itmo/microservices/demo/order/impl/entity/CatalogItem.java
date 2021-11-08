@@ -31,6 +31,11 @@ public class CatalogItem {
     @ManyToOne
     private Order order;
 
+    public CatalogItem(UUID randomUUID, String title, String description, int price, int amount) {
+        this.uuid = randomUUID;
+        this.title = title;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
