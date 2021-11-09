@@ -10,7 +10,12 @@ import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
 import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -93,16 +98,15 @@ public class OrderService implements IOrderService {
         }
     }
 
-    private void sendRequest(OrderDto orderDto, URL url) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("POST");
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("order", orderDto.toString());
+    private ResponseEntity<String> sendRequest(OrderDto orderDto, URL url) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        Map<String, OrderDto> parameters = new HashMap<>();
+        parameters.put("order", orderDto);
 
-        con.setDoOutput(true);
-        DataOutputStream out = new DataOutputStream(con.getOutputStream());
-        out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
-        out.flush();
-        out.close();
+        HttpEntity<Map<String, OrderDto>> request = new HttpEntity<>(parameters, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(API_URL, request, String.class);
+        return response;
     }
 }
