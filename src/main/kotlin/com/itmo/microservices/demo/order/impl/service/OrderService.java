@@ -3,11 +3,11 @@ package com.itmo.microservices.demo.order.impl.service;
 import com.itmo.microservices.demo.order.api.dto.Booking;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.api.dto.OrderItemDto;
+import com.itmo.microservices.demo.order.api.dto.OrderStatus;
 import com.itmo.microservices.demo.order.impl.dao.CatalogItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
 import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;
-import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class OrderService implements IOrderService {
@@ -45,7 +46,11 @@ public class OrderService implements IOrderService {
 
     @Override
     public OrderDto getOrderById(UUID uuid) {
-        return orderRepository.getById(uuid).toModel();
+        try {
+            return orderRepository.getById(uuid).toModel();
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
@@ -77,11 +82,15 @@ public class OrderService implements IOrderService {
     }
 
     @Override
-    public void selectDeliveryTime(UUID orderId, int seconds) throws IOException {
+    public void selectDeliveryTime(UUID orderId, int seconds) {
+        if (!orderRepository.existsById(orderId)) {
+            return;
+        }
+
         OrderDto orderDto = getOrderById(orderId);
-        orderDto.setDeliveryInfo(new Timestamp(seconds));
-        URL url = new URL(API_URL + "delivery/doDelivery");
-        sendRequest(orderDto, url);
+        if (orderDto.getStatus() != OrderStatus.PAID && orderDto.getStatus() != OrderStatus.SHIPPING) {
+            orderDto.setDeliveryInfo(new Timestamp(TimeUnit.SECONDS.toMillis(seconds)));
+        }
     }
 
     private void sendRequest(OrderDto orderDto, URL url) throws IOException {

@@ -3,11 +3,12 @@ package com.itmo.microservices.demo.order.api.controller;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -41,8 +42,9 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200", content = {@Content}),
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public OrderDto getOrder(@PathVariable("orderId") UUID uuid) {
-        return service.getOrderById(uuid);
+    public ResponseEntity<OrderDto> getOrder(@PathVariable("orderId") UUID uuid) {
+        OrderDto order = service.getOrderById(uuid);
+        return new ResponseEntity<>(order, order == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
     @PutMapping("/{orderId}/items")
@@ -77,7 +79,7 @@ public class OrderController {
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public void selectDeliveryTime(@PathVariable("orderId") UUID orderId,
-                                   @PathVariable("slot_in_sec") int seconds) throws IOException {
+                                   @PathVariable("slot_in_sec") int seconds) {
         service.selectDeliveryTime(orderId, seconds);
     }
 }
