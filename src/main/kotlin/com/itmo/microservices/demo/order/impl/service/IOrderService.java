@@ -12,4 +12,5 @@ public interface IOrderService {
     void putItemToOrder(UUID orderId, UUID itemId, int amount);
     Booking book(UUID orderId) throws IOException;
     void selectDeliveryTime(UUID orderId, int seconds) throws IOException;
+    OrderDto pay(UUID orderId);
 }

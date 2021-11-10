@@ -47,7 +47,7 @@ public class OrderController {
         return new ResponseEntity<>(order, order == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
-    @PutMapping("/{orderId}/items")
+    @PutMapping("/{orderId}/items/{itemId}?amount={amount}")
     @Operation(
             summary = "Put the item in the cart",
             responses = {
@@ -55,8 +55,8 @@ public class OrderController {
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public void updateOrder(@PathVariable("orderId") UUID orderId,
-                            @RequestParam UUID itemId,
-                            @RequestParam(value = "amount", defaultValue = "1") int amount) {
+                            @PathVariable("itemId") UUID itemId,
+                            @PathVariable("amount") int amount) {
         service.putItemToOrder(orderId, itemId, amount);
     }
 
@@ -81,5 +81,16 @@ public class OrderController {
     public void selectDeliveryTime(@PathVariable("orderId") UUID orderId,
                                    @PathVariable("slot_in_sec") int seconds) {
         service.selectDeliveryTime(orderId, seconds);
+    }
+
+    @PostMapping("/{orderId}/payment")
+    @Operation(
+            summary = "pay",
+            responses = {
+                    @ApiResponse(description = "OK", responseCode = "200"),
+                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    public OrderDto pay(@PathVariable("orderId") UUID orderId) {
+        return service.pay(orderId);
     }
 }

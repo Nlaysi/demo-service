@@ -1,9 +1,6 @@
 package com.itmo.microservices.demo.order.impl.service;
 
-import com.itmo.microservices.demo.order.api.dto.Booking;
-import com.itmo.microservices.demo.order.api.dto.OrderDto;
-import com.itmo.microservices.demo.order.api.dto.OrderItemDto;
-import com.itmo.microservices.demo.order.api.dto.OrderStatus;
+import com.itmo.microservices.demo.order.api.dto.*;
 import com.itmo.microservices.demo.order.impl.dao.CatalogItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
@@ -17,10 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +28,7 @@ public class OrderService implements IOrderService {
     private final CatalogItemRepository catalogItemRepository;
 
     private static final String API_URL = "http://77.234.215.138:30019/api/";
+    private static final String LOCAL_API_URL = "http://localhost:8080/api/";
 
     @Autowired
     public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, CatalogItemRepository catalogItemRepository) {
@@ -80,7 +75,7 @@ public class OrderService implements IOrderService {
     public Booking book(UUID orderId) throws IOException {
         OrderDto orderDto = getOrderById(orderId);
 
-        URL url = new URL(API_URL + "warehouse/book");
+        String url = LOCAL_API_URL + "warehouse/book";
         sendRequest(orderDto, url);
 
         return null;
@@ -98,15 +93,25 @@ public class OrderService implements IOrderService {
         }
     }
 
-    private ResponseEntity<String> sendRequest(OrderDto orderDto, URL url) {
+    @Override
+    public OrderDto pay(UUID orderId) {
+        OrderDto orderDto = getOrderById(orderId);
+
+        String url = LOCAL_API_URL + "payment/transaction";
+        sendRequest(orderDto, url);
+        //TODO: change status
+
+        return orderDto;
+    }
+
+    private ResponseEntity<String> sendRequest(OrderDto orderDto, String url) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, OrderDto> parameters = new HashMap<>();
         parameters.put("order", orderDto);
 
         HttpEntity<Map<String, OrderDto>> request = new HttpEntity<>(parameters, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(API_URL, request, String.class);
-        return response;
+        return restTemplate.postForEntity(url, request, String.class);
     }
 }
