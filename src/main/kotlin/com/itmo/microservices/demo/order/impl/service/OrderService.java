@@ -6,6 +6,7 @@ import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
 import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
+import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
@@ -72,11 +73,12 @@ public class OrderService implements IOrderService {
     }
 
     @Override
-    public Booking book(UUID orderId) throws IOException {
+    public Booking book(UUID orderId) {
         OrderDto orderDto = getOrderById(orderId);
-
-        String url = LOCAL_API_URL + "warehouse/book";
-        sendRequest(orderDto, url);
+        // TODO: provide auth token
+        WarehouseApi warehouseApi = new WarehouseApi();
+        //return response I do no how we will use it
+        warehouseApi.book(orderDto);
 
         return null;
     }
