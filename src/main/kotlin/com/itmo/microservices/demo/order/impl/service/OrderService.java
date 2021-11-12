@@ -4,7 +4,6 @@ import com.itmo.microservices.demo.order.api.dto.Booking;
 import com.itmo.microservices.demo.order.api.dto.CatalogItem;
 import com.itmo.microservices.demo.order.api.dto.Order;
 import com.itmo.microservices.demo.order.api.dto.OrderItem;
-import com.itmo.microservices.demo.order.impl.dao.CatalogItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +23,13 @@ import java.util.stream.Collectors;
 @Service
 public class OrderService implements IOrderService{
     private final OrderRepository repository;
-    private final CatalogItemRepository catalogItemRepository;
     private final OrderItemRepository orderItemRepository;
 
     private static final String API_URL = "http://http://77.234.215.138:30019/api/";
 
     @Autowired
-    public OrderService(OrderRepository repository, CatalogItemRepository catalogItemRepository, OrderItemRepository orderItemRepository) {
+    public OrderService(OrderRepository repository, OrderItemRepository orderItemRepository) {
         this.repository = repository;
-        this.catalogItemRepository = catalogItemRepository;
         this.orderItemRepository = orderItemRepository;
     }
 
@@ -46,9 +43,9 @@ public class OrderService implements IOrderService{
         com.itmo.microservices.demo.order.impl.entity.Order orderEntity = repository.getById(uuid);
 
         // entity.CatalogItem -> dto.CatalogItem
-        List<CatalogItem> dtoItems = orderEntity.getCatalogItems().stream()
+        List<CatalogItem> dtoItems = null; /*orderEntity.getCatalogItems().stream()
                 .map(item -> new CatalogItem(item.getUuid(), item.getTitle(), item.getDescription(),
-                        item.getPrice(), item.getAmount())).collect(Collectors.toList());
+                        item.getPrice(), item.getAmount())).collect(Collectors.toList());*/
 
         // List<dto.CatalogItem> -> Map<OrderItem, Integer>
         Map<OrderItem, Integer> itemList = dtoItems.stream()

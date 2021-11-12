@@ -28,7 +28,7 @@ public class Order {
     private Timestamp deliveryInfo;
     @OneToMany
     @ToString.Exclude
-    private List<CatalogItem> catalogItems;
+    private List<OrderItem> catalogItems;
 
     @Override
     public boolean equals(Object o) {
