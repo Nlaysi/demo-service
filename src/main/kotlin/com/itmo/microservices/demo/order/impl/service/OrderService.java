@@ -6,16 +6,19 @@ import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
 import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
+import com.itmo.microservices.demo.order.impl.external.PaymentApi;
 import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 
 import java.io.IOException;
+import java.net.URL;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +87,17 @@ public class OrderService implements IOrderService {
     }
 
     @Override
+    public OrderDto pay(UUID orderId) {
+        OrderDto orderDto = getOrderById(orderId);
+
+        PaymentApi paymentApi = new PaymentApi();
+        paymentApi.pay(orderDto);
+        //TODO: change status
+
+        return orderDto;
+    }
+
+    @Override
     public void selectDeliveryTime(UUID orderId, int seconds) {
         if (!orderRepository.existsById(orderId)) {
             return;
@@ -95,16 +109,6 @@ public class OrderService implements IOrderService {
         }
     }
 
-    @Override
-    public OrderDto pay(UUID orderId) {
-        OrderDto orderDto = getOrderById(orderId);
-
-        String url = LOCAL_API_URL + "payment/transaction";
-        sendRequest(orderDto, url);
-        //TODO: change status
-
-        return orderDto;
-    }
 
     private ResponseEntity<String> sendRequest(OrderDto orderDto, String url) {
         RestTemplate restTemplate = new RestTemplate();
