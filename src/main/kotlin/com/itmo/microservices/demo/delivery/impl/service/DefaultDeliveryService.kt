@@ -7,12 +7,18 @@ import com.itmo.microservices.demo.common.exception.NotFoundException
 import com.itmo.microservices.demo.common.exception.AccessDeniedException
 import com.itmo.microservices.demo.delivery.api.messaging.DeliveryCreatedEvent
 import com.itmo.microservices.demo.delivery.api.messaging.DeliveryDeletedEvent
+import com.itmo.microservices.demo.delivery.api.messaging.SlotsCreatedEvent
 import com.itmo.microservices.demo.delivery.api.model.DeliveryDTO
 import com.itmo.microservices.demo.delivery.api.model.DeliveryModel
+import com.itmo.microservices.demo.delivery.api.model.SlotsModel
 import com.itmo.microservices.demo.delivery.api.service.DeliveryService
 import com.itmo.microservices.demo.delivery.impl.entity.Delivery
+import com.itmo.microservices.demo.delivery.impl.entity.Slots
+import com.itmo.microservices.demo.delivery.impl.exeptions.BadRequestExeption
+import com.itmo.microservices.demo.delivery.impl.exeptions.OutOfRangeExeption
 import com.itmo.microservices.demo.delivery.impl.logging.DeliveryServiceNotableEvents
 import com.itmo.microservices.demo.delivery.impl.repository.DeliveryRepository
+import com.itmo.microservices.demo.delivery.impl.repository.SlotsRepository
 import com.itmo.microservices.demo.delivery.impl.util.toModel
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.userdetails.UserDetails
@@ -23,19 +29,22 @@ import java.util.*
 @Suppress("UnstableApiUsage")
 @Service
 class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
+                             private val slotsRepository: SlotsRepository,
                              private val eventBus: EventBus): DeliveryService {
 
     @InjectEventLogger
     private lateinit var eventLogger: EventLogger
 
     override fun doDelivery(request: DeliveryDTO, user: UserDetails) {
-        if (getSlot(request.preferredDeliveryTime)) {
+        if (getSlot(request.preferredDeliveryTime) &&
+                request.preferredDeliveryTime >
+                    LocalDateTime.now().plusDays(1).withHour(0).withMinute(0)) {
             val deliveryEntity = request.toEntity(user)
             deliveryRepository.save(deliveryEntity)
             eventBus.post(DeliveryCreatedEvent(deliveryEntity.toModel()))
             eventLogger.info(DeliveryServiceNotableEvents.I_DELIVERY_CREATED, deliveryEntity.id)
         } else
-            throw NotFoundException("Please, choose another delivery time")
+            throw OutOfRangeExeption("Please, choose another delivery time")
     }
 
     override fun getDeliveryInfo(deliveryId: UUID, user: UserDetails): DeliveryModel {
@@ -46,16 +55,46 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
         return delivery
     }
 
-    override fun getDeliverySlots(date: String): String {
-        val slots: MutableList<Int> = mutableListOf(5, 5, 5, 5, 5)
+    override fun setDeliverySlots(slots: Slots) {
+        val regex = """(\d{4})-(\d{2})-(\d{2})""".toRegex()
 
-        slots.forEachIndexed { index, element ->
-            slots[index] = element - deliverySearch(date, slotTimes[index], slotTimes[index + 1]) }
+        if (slots.deliveryMen?.size != slots.timeSlots?.size?.minus(1)) {
+            throw BadRequestExeption("Delivery men count and count of time slots doesn't match")
+        } else if (!slots.slotsDate!!.matches(regex)) {
+            throw BadRequestExeption("Incorrect date format. Use 'YYYY-MM-DD'")
+        }
 
-        var slotsAvailable = ""
-        slots.forEach { slotsAvailable += it.toString() }
+        val startOfDay = LocalDateTime.parse(slots.slotsDate + "T00:00:00")
+        val endOfDay = LocalDateTime.parse(slots.slotsDate + "T23:59:59")
 
-        return slotsVisualise(date, slots) //slotsAvailable
+        var outer = true
+        val dayDeliveries = deliveryRepository.findAllByPreferredDeliveryTimeBetween(startOfDay, endOfDay)
+        dayDeliveries.forEach{outer = getSlot(it.preferredDeliveryTime!!, slots, 1)}
+
+        if (outer){
+            if (slotsRepository.findByIdOrNull(slots.slotsDate) != null)
+                slotsRepository.deleteById(slots.slotsDate!!)
+
+            slotsRepository.save(slots)
+            eventBus.post(SlotsCreatedEvent(slots.toModel()))
+            eventLogger.info(DeliveryServiceNotableEvents.I_SLOTS_CREATED, slots.slotsDate)
+        } else
+            throw OutOfRangeExeption("Cannot set delivery slots. Some of the deliveries does not on the time slots")
+    }
+
+    override fun getDeliverySlots(date: String): SlotsModel {
+        val slots = slotsRepository.findByIdOrNull(date)?:
+            throw NotFoundException("Delivery slots not set")
+
+        val slotsMen = slots.deliveryMen
+        val slotsTime = slots.timeSlots
+
+        slotsMen?.forEachIndexed { index, element ->
+            slotsMen[index] = element -
+                    deliverySearch(date, slotsTime!![index], slotsTime[index + 1]) }
+
+        val slotsAvailable = Slots(slots.slotsDate, slotsMen, slotsTime)
+        return slotsAvailable.toModel()
     }
 
     override fun allDeliveries(user: UserDetails) = deliveryRepository.findAllByUser(user.username)
@@ -90,32 +129,23 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
         deliveryRepository.findAllByPreferredDeliveryTimeBetween(LocalDateTime.parse(date + "T" + time1),
             LocalDateTime.parse(date + "T" + time2)).size
 
-    fun slotsVisualise(date: String, slots: MutableList<Int>): String {
-        var visualise = "On $date available:\n"
 
-        slots.forEachIndexed { index, element ->
-            visualise += "slot#${index + 1}: $element of 5 (${slotTimes[index]} - ${slotTimes[index + 1]}),\n" }
-        return visualise
-    }
+    fun getSlot(time: LocalDateTime,
+                slots: Slots? = slotsRepository.findByIdOrNull(time.toString().substring(0, 10)),
+                lambda: Int = 0): Boolean {
 
-    fun getSlot(time: LocalDateTime): Boolean {
         val date = time.toString().substring(0, 10)
         var answer = false
 
-        slotTimes.forEachIndexed { index, element ->
-            if (time > LocalDateTime.parse(date + "T" + slotTimes[index]) &&
-                time < LocalDateTime.parse(date + "T" + slotTimes[index + 1])) {
-                answer = deliverySearch(date, slotTimes[index], slotTimes[index + 1]) < 5
+        val slotsMen = slots?.deliveryMen
+        val slotsTime = slots?.timeSlots
+
+        slotsMen?.forEachIndexed { index, element ->
+            if (time > LocalDateTime.parse(date + "T" + slotsTime!![index]) &&
+                time < LocalDateTime.parse(date + "T" + slotsTime[index + 1])) {
+                answer = deliverySearch(date, slotsTime[index], slotsTime[index + 1]) < element + lambda
             }
         }
         return answer
     }
-
-    val slotTimes: MutableList<String> = mutableListOf("10:00:00",
-                                                    "11:30:00",
-                                                    "13:00:00",
-                                                    "14:30:00",
-                                                    "16:00:00",
-                                                    "17:30:00"
-                                                )
 }

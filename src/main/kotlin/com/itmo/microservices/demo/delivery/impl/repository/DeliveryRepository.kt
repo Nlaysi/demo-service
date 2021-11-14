@@ -10,5 +10,4 @@ import java.util.*
 interface DeliveryRepository: JpaRepository<Delivery, UUID> {
     fun findAllByUser(user: String): List<Delivery>
     fun findAllByPreferredDeliveryTimeBetween(firstDate: LocalDateTime, secondDate: LocalDateTime): List<Delivery>
-
 }

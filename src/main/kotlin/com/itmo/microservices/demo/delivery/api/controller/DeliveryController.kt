@@ -2,7 +2,9 @@ package com.itmo.microservices.demo.delivery.api.controller
 
 import com.itmo.microservices.demo.delivery.api.model.DeliveryDTO
 import com.itmo.microservices.demo.delivery.api.model.DeliveryModel
+import com.itmo.microservices.demo.delivery.api.model.SlotsModel
 import com.itmo.microservices.demo.delivery.api.service.DeliveryService
+import com.itmo.microservices.demo.delivery.impl.entity.Slots
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -44,7 +46,21 @@ class DeliveryController(private val deliveryService: DeliveryService) {
     )
     fun getDeliverySlots(date: String,
                         @Parameter(hidden = true) @AuthenticationPrincipal user: UserDetails):
-            String? = deliveryService.getDeliverySlots(date)
+            SlotsModel? = deliveryService.getDeliverySlots(date)
+
+    @PostMapping("/slots")
+    @Operation(
+        summary = "Set delivery slots",
+        responses = [
+            ApiResponse(description = "OK", responseCode = "200"),
+            ApiResponse(description = "Incorrect day", responseCode = "404", content = [Content()]),
+            ApiResponse(description = "Unauthorized", responseCode = "403", content = [Content()])
+        ],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    fun setDeliverySlots(@RequestBody slots: Slots,
+                         @Parameter(hidden = true) @AuthenticationPrincipal user: UserDetails)
+        = deliveryService.setDeliverySlots(slots)
 
     @GetMapping("/{deliveryId}")
     @Operation(
