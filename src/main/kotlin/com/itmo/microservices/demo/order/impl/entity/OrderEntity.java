@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Entity(name = "order_table")
+@Entity
 @Getter
 @Setter
 @ToString
