@@ -13,6 +13,7 @@ import com.itmo.microservices.demo.warehouse.impl.entity.WarehouseItem
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.http.HttpStatus
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import java.util.*
@@ -21,6 +22,7 @@ import javax.validation.Valid
 @Validated
 @RestController
 @RequestMapping("/api/warehouse")
+@Transactional
 class WarehouseController(private val service: WarehouseService) {
 
     @PutMapping(
