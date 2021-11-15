@@ -68,8 +68,9 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200", content = {@Content}),
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public void bookOrder(@PathVariable("orderId") UUID orderId) throws IOException {
-        service.book(orderId);
+    public ResponseEntity<BookingDto> bookOrder(@PathVariable("orderId") UUID orderId) {
+        BookingDto booking = service.book(orderId);
+        return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
     @PostMapping("/{orderId}/delivery?slot={slot_in_sec}")
@@ -92,7 +93,18 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200"),
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public OrderDto pay(@PathVariable("orderId") UUID orderId) {
-        return service.pay(orderId);
+    public ResponseEntity<String> startPayment(@PathVariable("orderId") UUID orderId) {
+        return new ResponseEntity<>(service.startPayment(orderId) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
+    }
+
+    @PostMapping("/{orderId}/payment/finalize")
+    @Operation(
+            summary = "pay",
+            responses = {
+                    @ApiResponse(description = "OK", responseCode = "200"),
+                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    public ResponseEntity<String> finalizePayment(@PathVariable("orderId") UUID orderId) {
+        return new ResponseEntity<>(service.finalizePayment(orderId) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 }

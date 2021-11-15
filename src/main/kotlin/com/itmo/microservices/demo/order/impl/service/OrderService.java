@@ -57,7 +57,14 @@ public class OrderService implements IOrderService {
     public OrderDto putItemToOrder(UUID orderId, UUID itemId, int amount) {
         try {
             var order = orderRepository.getById(orderId);
+            if (order.getStatus() == OrderStatus.BOOKED) {
+                WarehouseApi warehouseApi = new WarehouseApi();
+                warehouseApi.unbook(order);
+                order.setStatus(OrderStatus.COLLECTING);
+            }
             var orderItem = new OrderItemEntity(orderId, itemId, amount);
+
+
             order.getOrderItems().add(orderItem);
 
             orderRepository.save(order);
@@ -70,28 +77,30 @@ public class OrderService implements IOrderService {
 
     @Override
     public BookingDto book(UUID orderId) {
-        OrderDto orderDto = getOrderById(orderId);
-        // TODO: provide auth token
-        WarehouseApi warehouseApi = new WarehouseApi();
-        //return response I do no how we will use it
-        warehouseApi.book(orderDto);
-
-        return null;
-    }
-
-    public void unbook(UUID orderId) {
-        // TODO: implement
+        try {
+            var order = orderRepository.getById(orderId);
+            if (order.getStatus() != OrderStatus.COLLECTING) {
+                return null;
+            }
+            // TODO: provide auth token
+            WarehouseApi warehouseApi = new WarehouseApi();
+            //return response I do no how we will use it
+            warehouseApi.book(order);
+            return new BookingDto();
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
-    public OrderDto pay(UUID orderId) {
+    public boolean startPayment(UUID orderId) {
         OrderDto orderDto = getOrderById(orderId);
 
         PaymentApi paymentApi = new PaymentApi();
         paymentApi.pay(orderDto);
         //TODO: change status
 
-        return orderDto;
+        return true;
     }
 
     @Override
@@ -106,6 +115,20 @@ public class OrderService implements IOrderService {
             return null;
         }
         return new BookingDto(orderId, new HashSet<>());
+    }
+
+    @Override
+    public boolean finalizePayment(UUID orderId) {
+        try {
+            var order = orderRepository.getById(orderId);
+            if (order.getStatus() != OrderStatus.BOOKED) {
+                return false;
+            }
+            order.setStatus(OrderStatus.PAID);
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 
 
