@@ -1,5 +1,6 @@
 package com.itmo.microservices.demo.order.impl.service;
 
+import com.itmo.microservices.demo.order.api.service.ICatalogItemService;
 import com.itmo.microservices.demo.order.impl.dao.CatalogItemRepository;
 import com.itmo.microservices.demo.order.api.dto.CatalogItemDto;
 import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;

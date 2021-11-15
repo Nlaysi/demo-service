@@ -1,5 +1,6 @@
 package com.itmo.microservices.demo.order.api.controller;
 
+import com.itmo.microservices.demo.order.api.dto.BookingDto;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,9 +79,10 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200"),
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public void selectDeliveryTime(@PathVariable("orderId") UUID orderId,
-                                   @PathVariable("slot_in_sec") int seconds) {
-        service.selectDeliveryTime(orderId, seconds);
+    public ResponseEntity<BookingDto> selectDeliveryTime(@PathVariable("orderId") UUID orderId,
+                                                         @PathVariable("slot_in_sec") int seconds) {
+        var booking = service.selectDeliveryTime(orderId, seconds);
+        return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
     @PostMapping("/{orderId}/payment")

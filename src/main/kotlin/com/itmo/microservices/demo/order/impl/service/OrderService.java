@@ -1,10 +1,12 @@
 package com.itmo.microservices.demo.order.impl.service;
 
 import com.itmo.microservices.demo.order.api.dto.*;
+import com.itmo.microservices.demo.order.api.service.IOrderService;
 import com.itmo.microservices.demo.order.impl.dao.CatalogItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
 import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;
+import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import com.itmo.microservices.demo.order.impl.external.PaymentApi;
 import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
@@ -12,15 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 
-import java.io.IOException;
-import java.net.URL;
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +42,9 @@ public class OrderService implements IOrderService{
 
     @Override
     public OrderDto createOrder() {
-        OrderDto newOrder = new OrderDto();
-        orderRepository.saveAndFlush(newOrder.toEntity());
-        return newOrder;
+        OrderEntity newOrder = new OrderEntity();
+        orderRepository.save(newOrder);
+        return newOrder.toModel();
     }
 
     @Override
@@ -57,25 +57,30 @@ public class OrderService implements IOrderService{
     }
 
     @Override
-    public void putItemToOrder(UUID orderId, UUID itemId, int amount) {
-        OrderDto orderDto = getOrderById(orderId);
-        for (OrderItemDto orderItem: orderDto.getItemList()) {
-            if (orderItem.getCatalogItem().getUuid() == itemId) {
-                orderItem.setAmount(amount);
-                orderItemRepository.saveAndFlush(orderItem.toEntity());
-                return;
+    public OrderDto putItemToOrder(UUID orderId, UUID itemId, int amount) {
+        try {
+            var order = orderRepository.getById(orderId);
+            for (var orderItem: order.getOrderItems()) {
+                if (orderItem.getCatalogItem().getUuid() == itemId) {
+                    orderItem.setAmount(amount);
+                    orderItemRepository.save(orderItem);
+                    return order.toModel();
+                }
             }
-        }
 
-        CatalogItemEntity catalogItem = catalogItemRepository.getById(itemId);
-        OrderItemEntity newOrderItem = new OrderItemEntity(UUID.randomUUID(), catalogItem, amount);
-        orderItemRepository.saveAndFlush(newOrderItem);
-        orderDto.getItemList().add(newOrderItem.toModel());
-        orderRepository.saveAndFlush(orderDto.toEntity());
+            CatalogItemEntity catalogItem = catalogItemRepository.getById(itemId);
+            OrderItemEntity newOrderItem = new OrderItemEntity(UUID.randomUUID(), catalogItem, amount);
+            order.getOrderItems().add(newOrderItem);
+            orderRepository.save(order);
+            orderItemRepository.save(newOrderItem);
+            return order.toModel();
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
-    public Booking book(UUID orderId) {
+    public BookingDto book(UUID orderId) {
         OrderDto orderDto = getOrderById(orderId);
         // TODO: provide auth token
         WarehouseApi warehouseApi = new WarehouseApi();
@@ -83,6 +88,10 @@ public class OrderService implements IOrderService{
         warehouseApi.book(orderDto);
 
         return null;
+    }
+
+    public void unbook(UUID orderId) {
+        // TODO: implement
     }
 
     @Override
@@ -97,15 +106,17 @@ public class OrderService implements IOrderService{
     }
 
     @Override
-    public void selectDeliveryTime(UUID orderId, int seconds) {
-        if (!orderRepository.existsById(orderId)) {
-            return;
+    public BookingDto selectDeliveryTime(UUID orderId, int seconds) {
+        try {
+            var order = orderRepository.getById(orderId);
+            if (order.getStatus() == OrderStatus.BOOKED) {
+                order.setDeliveryInfo(new Timestamp(TimeUnit.SECONDS.toMillis(seconds)));
+                orderRepository.save(order);
+            }
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
         }
-
-        OrderDto orderDto = getOrderById(orderId);
-        if (orderDto.getStatus() != OrderStatus.PAID && orderDto.getStatus() != OrderStatus.SHIPPING) {
-            orderDto.setDeliveryInfo(new Timestamp(TimeUnit.SECONDS.toMillis(seconds)));
-        }
+        return new BookingDto(orderId, new HashSet<>());
     }
 
 
