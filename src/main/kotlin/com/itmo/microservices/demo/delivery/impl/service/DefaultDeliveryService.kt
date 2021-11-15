@@ -15,7 +15,7 @@ import com.itmo.microservices.demo.delivery.api.service.DeliveryService
 import com.itmo.microservices.demo.delivery.impl.entity.Delivery
 import com.itmo.microservices.demo.delivery.impl.entity.Slots
 import com.itmo.microservices.demo.delivery.impl.exeptions.BadRequestExeption
-import com.itmo.microservices.demo.delivery.impl.exeptions.OutOfRangeExeption
+import com.itmo.microservices.demo.delivery.impl.exeptions.OutOfRangeException
 import com.itmo.microservices.demo.delivery.impl.logging.DeliveryServiceNotableEvents
 import com.itmo.microservices.demo.delivery.impl.repository.DeliveryRepository
 import com.itmo.microservices.demo.delivery.impl.repository.SlotsRepository
@@ -36,15 +36,14 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
     private lateinit var eventLogger: EventLogger
 
     override fun doDelivery(request: DeliveryDTO, user: UserDetails) {
-        if (getSlot(request.preferredDeliveryTime) &&
-                request.preferredDeliveryTime >
-                    LocalDateTime.now().plusDays(1).withHour(0).withMinute(0)) {
+        if (getSlot( request.preferredDeliveryTime) && request.preferredDeliveryTime >
+                LocalDateTime.now().plusDays(1).withHour(0).withMinute(0)) {
             val deliveryEntity = request.toEntity(user)
             deliveryRepository.save(deliveryEntity)
             eventBus.post(DeliveryCreatedEvent(deliveryEntity.toModel()))
             eventLogger.info(DeliveryServiceNotableEvents.I_DELIVERY_CREATED, deliveryEntity.id)
         } else
-            throw OutOfRangeExeption("Please, choose another delivery time")
+            throw OutOfRangeException("Please, choose another delivery time")
     }
 
     override fun getDeliveryInfo(deliveryId: UUID, user: UserDetails): DeliveryModel {
@@ -56,11 +55,11 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
     }
 
     override fun setDeliverySlots(slots: Slots) {
-        val regex = """(\d{4})-(\d{2})-(\d{2})""".toRegex()
+        val dateFormatRegex = """(\d{4})-(\d{2})-(\d{2})""".toRegex()
 
         if (slots.deliveryMen?.size != slots.timeSlots?.size?.minus(1)) {
             throw BadRequestExeption("Delivery men count and count of time slots doesn't match")
-        } else if (!slots.slotsDate!!.matches(regex)) {
+        } else if (!slots.slotsDate!!.matches(dateFormatRegex)) {
             throw BadRequestExeption("Incorrect date format. Use 'YYYY-MM-DD'")
         }
 
@@ -69,7 +68,7 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
 
         var outer = true
         val dayDeliveries = deliveryRepository.findAllByPreferredDeliveryTimeBetween(startOfDay, endOfDay)
-        dayDeliveries.forEach{outer = getSlot(it.preferredDeliveryTime!!, slots, 1)}
+        dayDeliveries.forEach{outer = getSlot(it.preferredDeliveryTime, slots, 1)}
 
         if (outer){
             if (slotsRepository.findByIdOrNull(slots.slotsDate) != null)
@@ -79,7 +78,7 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
             eventBus.post(SlotsCreatedEvent(slots.toModel()))
             eventLogger.info(DeliveryServiceNotableEvents.I_SLOTS_CREATED, slots.slotsDate)
         } else
-            throw OutOfRangeExeption("Cannot set delivery slots. Some of the deliveries does not on the time slots")
+            throw OutOfRangeException("Cannot set delivery slots. Some of the deliveries does not on the time slots")
     }
 
     override fun getDeliverySlots(date: String): SlotsModel {
@@ -90,8 +89,11 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
         val slotsTime = slots.timeSlots
 
         slotsMen?.forEachIndexed { index, element ->
-            slotsMen[index] = element -
-                    deliverySearch(date, slotsTime!![index], slotsTime[index + 1]) }
+            if (slotsTime != null) {
+                slotsMen[index] = element -
+                        deliverySearch(date, slotsTime[index], slotsTime[index + 1])
+            }
+        }
 
         val slotsAvailable = Slots(slots.slotsDate, slotsMen, slotsTime)
         return slotsAvailable.toModel()
@@ -130,7 +132,7 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
             LocalDateTime.parse(date + "T" + time2)).size
 
 
-    fun getSlot(time: LocalDateTime,
+    fun getSlot(time: LocalDateTime?,
                 slots: Slots? = slotsRepository.findByIdOrNull(time.toString().substring(0, 10)),
                 lambda: Int = 0): Boolean {
 
@@ -141,9 +143,11 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
         val slotsTime = slots?.timeSlots
 
         slotsMen?.forEachIndexed { index, element ->
-            if (time > LocalDateTime.parse(date + "T" + slotsTime!![index]) &&
-                time < LocalDateTime.parse(date + "T" + slotsTime[index + 1])) {
-                answer = deliverySearch(date, slotsTime[index], slotsTime[index + 1]) < element + lambda
+            if (time != null && slotsTime != null) {
+                if (time > LocalDateTime.parse(date + "T" + slotsTime[index]) &&
+                    time < LocalDateTime.parse(date + "T" + slotsTime[index + 1])) {
+                    answer = deliverySearch(date, slotsTime[index], slotsTime[index + 1]) < element + lambda
+                }
             }
         }
         return answer
