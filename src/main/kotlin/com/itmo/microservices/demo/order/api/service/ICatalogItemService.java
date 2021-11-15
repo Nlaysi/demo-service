@@ -1,4 +1,4 @@
-package com.itmo.microservices.demo.order.impl.service;
+package com.itmo.microservices.demo.order.api.service;
 
 import com.itmo.microservices.demo.order.api.dto.CatalogItemDto;
 

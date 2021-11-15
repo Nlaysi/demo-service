@@ -6,10 +6,12 @@ import lombok.*;
 import org.hibernate.Hibernate;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderEntity {
     @Id
+    @GeneratedValue
     private UUID uuid;
 
     private LocalDateTime timeCreated;
@@ -30,14 +33,14 @@ public class OrderEntity {
     private Timestamp deliveryInfo;
     @OneToMany
     @ToString.Exclude
-    private List<OrderItemEntity> catalogItems;
+    private List<OrderItemEntity> orderItems = new ArrayList<>();
 
-    public OrderEntity(UUID uuid, LocalDateTime timeCreated, OrderStatus status, Timestamp deliveryInfo, List<OrderItemEntity> catalogItems) {
+    public OrderEntity(UUID uuid, LocalDateTime timeCreated, OrderStatus status, Timestamp deliveryInfo, List<OrderItemEntity> orderItems) {
         this.uuid = uuid;
         this.timeCreated = timeCreated;
         this.status = status;
         this.deliveryInfo = deliveryInfo;
-        this.catalogItems = catalogItems;
+        this.orderItems = orderItems;
     }
 
     @Override
@@ -54,6 +57,6 @@ public class OrderEntity {
     }
 
     public OrderDto toModel() {
-        return new OrderDto(this.uuid, this.timeCreated, this.catalogItems.stream().map(OrderItemEntity::toModel).collect(Collectors.toList()), this.status, this.deliveryInfo);
+        return new OrderDto(this.uuid, this.timeCreated, this.orderItems.stream().map(OrderItemEntity::toModel).collect(Collectors.toList()), this.status, this.deliveryInfo);
     }
 }

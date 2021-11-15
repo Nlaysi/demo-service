@@ -12,7 +12,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Booking {
+public class BookingDto {
     private UUID id;
     private Set<UUID> failedItems;
 }
