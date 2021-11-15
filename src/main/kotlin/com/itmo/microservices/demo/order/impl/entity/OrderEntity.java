@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,11 +18,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Entity(name = "order_table")
+@Entity
 @Getter
 @Setter
 @ToString
 @RequiredArgsConstructor
+@Table(name = "orders")
 public class OrderEntity {
     @Id
     @GeneratedValue

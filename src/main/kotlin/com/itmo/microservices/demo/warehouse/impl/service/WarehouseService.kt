@@ -1,127 +1,104 @@
 package com.itmo.microservices.demo.warehouse.impl.service
 
+import com.itmo.microservices.demo.warehouse.impl.repository.WarehouseItemRepository
+import com.itmo.microservices.demo.warehouse.impl.repository.CatalogItemRepository
 import com.itmo.microservices.commonlib.annotations.InjectEventLogger
 import com.itmo.microservices.commonlib.logging.EventLogger
-import com.itmo.microservices.demo.warehouse.api.model.ItemQuantityChangeRequest
-import com.itmo.microservices.demo.warehouse.api.model.ResponseMessage
-import com.itmo.microservices.demo.warehouse.impl.entity.WCatalogItem
+import com.itmo.microservices.demo.warehouse.api.exception.ItemIsNotExistException
+import com.itmo.microservices.demo.warehouse.api.exception.ItemQuantityException
+import java.util.UUID
+import com.itmo.microservices.demo.warehouse.api.model.ItemQuantityRequestDTO
+import com.itmo.microservices.demo.warehouse.impl.entity.CatalogItem
 import com.itmo.microservices.demo.warehouse.impl.entity.WarehouseItem
 import com.itmo.microservices.demo.warehouse.impl.logging.WarehouseServiceNotableEvents
-import com.itmo.microservices.demo.warehouse.impl.repository.ICatalogItemRepository
-import com.itmo.microservices.demo.warehouse.impl.repository.WarehouseItemRepository
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.util.*
 
 @Service
 class WarehouseService(
     private val warehouseRepository: WarehouseItemRepository,
-    private val catalogRepository: ICatalogItemRepository
+    private val catalogRepository: CatalogItemRepository
 ) {
     @InjectEventLogger
     private val eventLogger: EventLogger? = null
-    private fun ValidationError(): Boolean {
-        return false
+
+    fun checkAllItems(items: List<ItemQuantityRequestDTO>) {
+        for (item in items) {
+            if (!catalogRepository.existsById(item.id)) {
+                throw ItemIsNotExistException("Item with id:${item.id}, not found")
+            }
+        }
     }
 
-    fun income(values: ItemQuantityChangeRequest): ResponseEntity<String> {
-        val item = warehouseRepository.findWarehouseItemById(values.id)
-        //Здесь чека на values.amount не должно быть. он должен быть в контроллере.
-        if ((item == null) || (values.amount < 1)) {
-            //Так ошибки нельзя описывать, сделай лучше какой нибудь интерфейс или че нить подобное data class Error(val errorCode:Int, val message: String)
-            return ResponseEntity(ResponseMessage.BAD_REQUEST.getText(), HttpStatus.BAD_REQUEST)
+    fun checkAllQuantity(items: List<ItemQuantityRequestDTO>) {
+        for (item in items) {
+            if (item.amount > getItemQuantity(item.id)) {
+                throw ItemQuantityException("Item with id:${item.id}, not enough quantity")
+            }
         }
-        item.amount = item.amount + values.amount
+    }
+
+    fun checkAllBookQuantity(items: List<ItemQuantityRequestDTO>) {
+        for (item in items) {
+            if (item.amount > getItemBooked(item.id)) {
+                throw ItemQuantityException("Item with id:${item.id}, to many unbook amount")
+            }
+        }
+    }
+
+    private fun getItemQuantity(id: UUID): Int {
+        val item = warehouseRepository.findWarehouseItemById(id)
+        return item!!.amount!! - item.booked!!;
+    }
+
+    private fun getItemBooked(id: UUID): Int {
+        val item = warehouseRepository.findWarehouseItemById(id)
+        return item!!.booked!!
+    }
+
+    fun income(value: ItemQuantityRequestDTO) {
+        val item = warehouseRepository.findWarehouseItemById(value.id) ?: throw ItemIsNotExistException("Item with id:${value.id}, not found")
+        item.amount = item.amount?.plus(value.amount)
         eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
         warehouseRepository.save(item)
-        return ResponseEntity(ResponseMessage.OK_UPDATED.getText(), HttpStatus.OK)
     }
 
-    fun outcome(values: ItemQuantityChangeRequest): ResponseEntity<String> {
-        val item = warehouseRepository.findWarehouseItemById(values.id)
-
-        if ((item == null) || (values.amount < 1)) {
-            return ResponseEntity(
-                ResponseMessage.BAD_REQUEST.getText(),
-                HttpStatus.BAD_REQUEST
-            )
-        } else {
-            if (item.amount >= values.amount) {
-                item.amount =
-                    item.amount - values.amount
-            } else {
-                return ResponseEntity(
-                    ResponseMessage.BAD_QUANTITY.getText(),
-                    HttpStatus.BAD_REQUEST
-                )
-            }
-            eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
-            warehouseRepository.save(item)
-            return ResponseEntity(ResponseMessage.OK_UPDATED.getText(), HttpStatus.OK)
-        }
+    fun outcome(value: ItemQuantityRequestDTO) {
+        val item = warehouseRepository.findWarehouseItemById(value.id) ?: throw ItemIsNotExistException("Item with id:${value.id}, not found")
+        item.amount = item.amount?.minus(value.amount)
+        eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
+        warehouseRepository.save(item)
     }
 
-    fun book(values: ItemQuantityChangeRequest): ResponseEntity<String> {
-        val item = warehouseRepository.findWarehouseItemById(values.id)
-
-        if ((item == null) || (values.amount < 1)) {
-            return ResponseEntity(
-                ResponseMessage.BAD_REQUEST.getText(),
-                HttpStatus.BAD_REQUEST
-            )
-        } else {
-            if (item.amount - item.booked >= values.amount) item.booked =
-                item.booked + values.amount else return ResponseEntity(
-                ResponseMessage.BAD_QUANTITY.getText(),
-                HttpStatus.BAD_REQUEST
-            )
-            eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
-            warehouseRepository.save(item)
-            return ResponseEntity(ResponseMessage.OK_UPDATED.getText(), HttpStatus.OK)
-        }
+    fun book(value: ItemQuantityRequestDTO) {
+        val item = warehouseRepository.findWarehouseItemById(value.id) ?: throw ItemIsNotExistException("Item with id:${value.id}, not found")
+        item.booked = item.booked?.plus(value.amount)
+        eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
+        warehouseRepository.save(item)
     }
 
-    fun unbook(values: ItemQuantityChangeRequest): ResponseEntity<String> {
-        val item = warehouseRepository.findWarehouseItemById(values.id)
-
-        if ((item == null) || (values.amount < 1)) {
-            return ResponseEntity(
-                ResponseMessage.BAD_REQUEST.getText(),
-                HttpStatus.BAD_REQUEST
-            )
-        } else {
-            if (item.booked >= values.amount) item.booked =
-                item.booked - values.amount else return ResponseEntity(
-                ResponseMessage.BAD_QUANTITY.getText(),
-                HttpStatus.BAD_REQUEST
-            )
-            eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
-            warehouseRepository.save(item)
-            return ResponseEntity(ResponseMessage.OK_UPDATED.getText(), HttpStatus.OK)
-        }
+    fun unbook(value: ItemQuantityRequestDTO) {
+        val item = warehouseRepository.findWarehouseItemById(value.id) ?: throw ItemIsNotExistException("Item with id:${value.id}, not found")
+        item.booked = item!!.booked?.minus(value.amount)
+        eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_QUANTITY_UPDATED, item.id)
+        warehouseRepository.save(item!!)
     }
 
-    fun addItem(item: WCatalogItem): ResponseEntity<String> {
-        if (ValidationError()) return ResponseEntity(ResponseMessage.BAD_REQUEST.getText(), HttpStatus.BAD_REQUEST)
+    fun addItem(item: CatalogItem) {
         val catalogItem = catalogRepository.save(item)
         val warehouseItem = WarehouseItem(catalogItem, 0, 0)
         eventLogger!!.info(WarehouseServiceNotableEvents.I_ITEM_CREATED, catalogItem.id)
         warehouseRepository.save(warehouseItem)
-        return ResponseEntity(ResponseMessage.OK_CREATED.getText(), HttpStatus.OK)
     }
 
-    val itemsList: ResponseEntity<List<WCatalogItem>>
-        get() {
-            val list = catalogRepository.findAll()
-            return ResponseEntity(list, HttpStatus.OK)
-        }
-
-    fun getItem(id: UUID?): ResponseEntity<WCatalogItem> {
-        return ResponseEntity(catalogRepository.findCatalogItemById(id), HttpStatus.OK)
+    fun getItems(): List<CatalogItem?> {
+        return catalogRepository.findAll()
     }
 
-    fun getItemQuantity(id: UUID?): ResponseEntity<WarehouseItem> {
-        return ResponseEntity(warehouseRepository.findWarehouseItemById(id), HttpStatus.OK)
+    fun getItem(id: UUID?): CatalogItem {
+        return catalogRepository.findCatalogItemById(id) ?: throw ItemIsNotExistException("Item with id:${id}, not found")
+    }
+
+    fun getItemQuantity(id: UUID?): WarehouseItem {
+        return warehouseRepository.findWarehouseItemById(id) ?: throw ItemIsNotExistException("Item with id:${id}, not found")
     }
 }

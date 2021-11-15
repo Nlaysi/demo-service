@@ -3,6 +3,7 @@ package com.itmo.microservices.demo.delivery.impl.entity
 import com.itmo.microservices.demo.delivery.api.model.DeliveryType
 import java.time.LocalDateTime
 import java.util.*
+import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 
@@ -10,6 +11,7 @@ import javax.persistence.Id
 class Delivery {
     @Id
     var id: UUID? = null
+    @Column(name = "user_id")
     var user: String? = null
     var type: DeliveryType? = null
     var warehouse: Int? = null
