@@ -8,6 +8,7 @@ import org.hibernate.Hibernate;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@Table(name = "orders")
 public class OrderEntity {
     @Id
     private UUID uuid;

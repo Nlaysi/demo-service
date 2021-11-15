@@ -26,13 +26,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class OrderService implements IOrderService {
+public class OrderService implements IOrderService{
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final CatalogItemRepository catalogItemRepository;
 
     private static final String API_URL = "http://77.234.215.138:30019/api/";
-    private static final String LOCAL_API_URL = "http://localhost:8080/api/";
 
     @Autowired
     public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, CatalogItemRepository catalogItemRepository) {
