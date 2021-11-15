@@ -1,21 +1,22 @@
 package com.itmo.microservices.demo.order.api.dto;
 
-import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Generated;
+import lombok.Getter;
 import org.springframework.context.annotation.Lazy;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
-@Data
 @Builder
+@Getter
 @AllArgsConstructor
 @Lazy
-public class OrderDto {
+public class OrderDto extends AbstractDto {
     private UUID uuid;
     private LocalDateTime timeCreated;
     private List<OrderItemDto> itemList;
@@ -28,10 +29,6 @@ public class OrderDto {
         this.itemList = new ArrayList<>();
         this.status = OrderStatus.COLLECTING;
         this.deliveryInfo = new Timestamp(0);
-    }
-
-    public OrderEntity toEntity() {
-        return new OrderEntity(this.uuid, this.timeCreated, this.status, this.deliveryInfo, this.itemList.stream().map(OrderItemDto::toEntity).collect(Collectors.toList()));
     }
 }
 

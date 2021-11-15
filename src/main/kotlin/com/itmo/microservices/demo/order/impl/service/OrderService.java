@@ -1,6 +1,8 @@
 package com.itmo.microservices.demo.order.impl.service;
 
-import com.itmo.microservices.demo.order.api.dto.*;
+import com.itmo.microservices.demo.order.api.dto.BookingDto;
+import com.itmo.microservices.demo.order.api.dto.OrderDto;
+import com.itmo.microservices.demo.order.api.dto.OrderStatus;
 import com.itmo.microservices.demo.order.api.service.IOrderService;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
@@ -8,9 +10,9 @@ import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import com.itmo.microservices.demo.order.impl.external.PaymentApi;
 import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
+import com.itmo.microservices.demo.order.util.mapping.OrderMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -19,24 +21,26 @@ import java.util.concurrent.TimeUnit;
 public class OrderService implements IOrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final OrderMapper orderMapper;
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
+    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, OrderMapper orderMapper) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
+        this.orderMapper = orderMapper;
     }
 
     @Override
     public OrderDto createOrder() {
         OrderEntity newOrder = new OrderEntity();
         orderRepository.save(newOrder);
-        return newOrder.toModel();
+        return orderMapper.toDto(newOrder);
     }
 
     @Override
     public OrderDto getOrderById(UUID uuid) {
         try {
-            return orderRepository.getById(uuid).toModel();
+            return orderMapper.toDto(orderRepository.getById(uuid));
         } catch (javax.persistence.EntityNotFoundException e) {
             return null;
         }
@@ -48,7 +52,7 @@ public class OrderService implements IOrderService {
             var order = orderRepository.getById(orderId);
             if (order.getStatus() == OrderStatus.BOOKED) {
                 WarehouseApi warehouseApi = new WarehouseApi();
-                warehouseApi.unbook(order);
+                warehouseApi.unbook(orderMapper.toDto(order));
                 order.setStatus(OrderStatus.COLLECTING);
             }
             var orderItem = new OrderItemEntity(orderId, itemId, amount);
@@ -58,7 +62,7 @@ public class OrderService implements IOrderService {
 
             orderRepository.save(order);
             orderItemRepository.save(orderItem);
-            return order.toModel();
+            return orderMapper.toDto(order);
         } catch (javax.persistence.EntityNotFoundException e) {
             return null;
         }
@@ -74,16 +78,12 @@ public class OrderService implements IOrderService {
             // TODO: provide auth token
             WarehouseApi warehouseApi = new WarehouseApi();
             //return response I do no how we will use it
-            Set failed = warehouseApi.book(order).getBody();
+            Set failed = warehouseApi.book(orderMapper.toDto(order)).getBody();
             assert failed != null;
             return new BookingDto(orderId, failed);
         } catch (javax.persistence.EntityNotFoundException e) {
             return null;
         }
-    }
-
-    public void unbook(UUID orderId) {
-        // TODO: implement
     }
 
     @Override

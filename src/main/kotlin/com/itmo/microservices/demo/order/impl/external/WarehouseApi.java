@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,11 +20,10 @@ public class WarehouseApi implements IWarehouseApi {
     private static final String API_URL = "http://77.234.215.138:30019/api/warehouse/book";
 
     @Override
-    public ResponseEntity<Set> book(OrderEntity order) {
+    public ResponseEntity<Set> book(OrderDto orderDto) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        OrderDto orderDto = order.toModel();
         Map<String, List<ItemQuantityRequestDTOJava>> parameters = new HashMap<>();
         List<ItemQuantityRequestDTOJava> itemList = orderDto.getItemList()
                 .stream()
@@ -37,7 +38,7 @@ public class WarehouseApi implements IWarehouseApi {
     }
 
     @Override
-    public ResponseEntity<String> unbook(OrderEntity order) {
+    public ResponseEntity<String> unbook(OrderDto order) {
         return null;
     }
 }
