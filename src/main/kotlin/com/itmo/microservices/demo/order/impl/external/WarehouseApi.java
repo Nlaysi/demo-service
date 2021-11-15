@@ -1,8 +1,8 @@
 package com.itmo.microservices.demo.order.impl.external;
 
+import com.itmo.microservices.demo.order.api.dto.ItemQuantityRequestDTOJava;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.api.external.IWarehouseApi;
-import com.itmo.microservices.demo.warehouse.api.model.ItemQuantityRequestDTO;
 import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,16 +23,16 @@ public class WarehouseApi implements IWarehouseApi {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         OrderDto orderDto = order.toModel();
-        Map<String, List<ItemQuantityRequestDTO>> parameters = new HashMap<>();
-        List<ItemQuantityRequestDTO> itemList = orderDto.getItemList()
+        Map<String, List<ItemQuantityRequestDTOJava>> parameters = new HashMap<>();
+        List<ItemQuantityRequestDTOJava> itemList = orderDto.getItemList()
                 .stream()
                 .map(orderItem ->
-                        new ItemQuantityRequestDTO(orderItem.getCatalogItemId(),
+                        new ItemQuantityRequestDTOJava(orderItem.getCatalogItemId(),
                                 orderItem.getAmount()))
                 .collect(Collectors.toList());
         parameters.put("itemList", itemList);
 
-        HttpEntity<Map<String, List<ItemQuantityRequestDTO>>> request = new HttpEntity<>(parameters, headers);
+        HttpEntity<Map<String, List<ItemQuantityRequestDTOJava>>> request = new HttpEntity<>(parameters, headers);
         return restTemplate.postForEntity(API_URL, request, Set.class);
     }
 
