@@ -9,27 +9,16 @@ import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import com.itmo.microservices.demo.order.impl.external.PaymentApi;
 import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpHeaders;
 
 import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class OrderService implements IOrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-
-    private static final String API_URL = "http://77.234.215.138:30019/api/";
-    private static final String LOCAL_API_URL = "http://localhost:8080/api/";
 
     @Autowired
     public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
@@ -74,9 +63,13 @@ public class OrderService implements IOrderService {
         // TODO: provide auth token
         WarehouseApi warehouseApi = new WarehouseApi();
         //return response I do no how we will use it
-        warehouseApi.book(orderDto);
+        Set failed = warehouseApi.book(orderDto).getBody();
 
-        return null;
+        assert failed != null;
+        if (failed.isEmpty()) {
+            return null;
+        }
+        return new BookingDto(orderId, failed);
     }
 
     public void unbook(UUID orderId) {
@@ -106,17 +99,5 @@ public class OrderService implements IOrderService {
             return null;
         }
         return new BookingDto(orderId, new HashSet<>());
-    }
-
-
-    private ResponseEntity<String> sendRequest(OrderDto orderDto, String url) {
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, OrderDto> parameters = new HashMap<>();
-        parameters.put("order", orderDto);
-
-        HttpEntity<Map<String, OrderDto>> request = new HttpEntity<>(parameters, headers);
-        return restTemplate.postForEntity(url, request, String.class);
     }
 }

@@ -23,7 +23,6 @@ public class PaymentApi implements IPaymentApi {
         parameters.put("order", orderDto);
 
         HttpEntity<Map<String, OrderDto>> request = new HttpEntity<>(parameters, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(API_URL, request, String.class);
-        return response;
+        return restTemplate.postForEntity(API_URL, request, String.class);
     }
 }
