@@ -2,10 +2,8 @@ package com.itmo.microservices.demo.order.impl.service;
 
 import com.itmo.microservices.demo.order.api.dto.*;
 import com.itmo.microservices.demo.order.api.service.IOrderService;
-import com.itmo.microservices.demo.order.impl.dao.CatalogItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
-import com.itmo.microservices.demo.order.impl.entity.CatalogItemEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import com.itmo.microservices.demo.order.impl.external.PaymentApi;
@@ -29,15 +27,13 @@ import java.util.concurrent.TimeUnit;
 public class OrderService implements IOrderService{
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final CatalogItemRepository catalogItemRepository;
 
     private static final String API_URL = "http://77.234.215.138:30019/api/";
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, CatalogItemRepository catalogItemRepository) {
+    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
-        this.catalogItemRepository = catalogItemRepository;
     }
 
     @Override
@@ -60,19 +56,11 @@ public class OrderService implements IOrderService{
     public OrderDto putItemToOrder(UUID orderId, UUID itemId, int amount) {
         try {
             var order = orderRepository.getById(orderId);
-            for (var orderItem: order.getOrderItems()) {
-                if (orderItem.getCatalogItem().getUuid() == itemId) {
-                    orderItem.setAmount(amount);
-                    orderItemRepository.save(orderItem);
-                    return order.toModel();
-                }
-            }
+            var orderItem = new OrderItemEntity(orderId, itemId, amount);
+            order.getOrderItems().add(orderItem);
 
-            CatalogItemEntity catalogItem = catalogItemRepository.getById(itemId);
-            OrderItemEntity newOrderItem = new OrderItemEntity(UUID.randomUUID(), catalogItem, amount);
-            order.getOrderItems().add(newOrderItem);
             orderRepository.save(order);
-            orderItemRepository.save(newOrderItem);
+            orderItemRepository.save(orderItem);
             return order.toModel();
         } catch (javax.persistence.EntityNotFoundException e) {
             return null;

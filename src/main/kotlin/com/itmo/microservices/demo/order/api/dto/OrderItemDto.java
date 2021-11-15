@@ -16,10 +16,10 @@ import java.util.UUID;
 @Lazy
 public class OrderItemDto {
     private UUID uuid;
-    private CatalogItemDto catalogItem;
+    private UUID catalogItemId;
     private Integer amount;
 
     public OrderItemEntity toEntity() {
-        return new OrderItemEntity(this.uuid, this.catalogItem.toEntity(), this.amount);
+        return new OrderItemEntity(this.uuid, this.catalogItemId, this.amount);
     }
 }
