@@ -59,7 +59,7 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
 
         if (slots.deliveryMen?.size != slots.timeSlots?.size?.minus(1)) {
             throw BadRequestExeption("Delivery men count and count of time slots doesn't match")
-        } else if (!slots.slotsDate!!.matches(dateFormatRegex)) {
+        } else if (!slots.slotsDate.matches(dateFormatRegex)) {
             throw BadRequestExeption("Incorrect date format. Use 'YYYY-MM-DD'")
         }
 
@@ -72,7 +72,7 @@ class DefaultDeliveryService(private val deliveryRepository: DeliveryRepository,
 
         if (outer){
             if (slotsRepository.findByIdOrNull(slots.slotsDate) != null)
-                slotsRepository.deleteById(slots.slotsDate!!)
+                slotsRepository.deleteById(slots.slotsDate)
 
             slotsRepository.save(slots)
             eventBus.post(SlotsCreatedEvent(slots.toModel()))

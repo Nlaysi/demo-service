@@ -7,7 +7,7 @@ import javax.persistence.Id
 @Entity
 class Slots {
     @Id
-    var slotsDate: String? = null
+    lateinit var slotsDate: String
     @ElementCollection
     var deliveryMen: MutableList<Int>? = null
     @ElementCollection
@@ -15,7 +15,7 @@ class Slots {
 
     constructor()
 
-    constructor(slotsDate: String?,
+    constructor(slotsDate: String,
                 deliveryMen: MutableList<Int>?,
                 timeSlots: MutableList<String>?
     ) {
