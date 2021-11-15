@@ -10,7 +10,7 @@ public interface IOrderService {
     OrderDto createOrder();
     OrderDto getOrderById(UUID orderId);
     OrderDto putItemToOrder(UUID orderId, UUID itemId, int amount);
+    OrderDto pay(UUID orderId);
     BookingDto book(UUID orderId) throws IOException;
     BookingDto selectDeliveryTime(UUID orderId, int seconds) throws IOException;
-    OrderDto pay(UUID orderId);
 }

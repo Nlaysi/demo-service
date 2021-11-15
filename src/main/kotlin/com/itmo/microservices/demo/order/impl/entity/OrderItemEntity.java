@@ -18,17 +18,16 @@ import java.util.UUID;
 public class OrderItemEntity {
     @Id
     private UUID uuid;
-    @OneToOne
-    private CatalogItemEntity catalogItem;
+    private UUID catalogItemId;
     private Integer amount;
 
-    public OrderItemEntity(UUID uuid, CatalogItemEntity catalogItem, Integer amount) {
+    public OrderItemEntity(UUID uuid, UUID catalogItem, Integer amount) {
         this.uuid = uuid;
-        this.catalogItem = catalogItem;
+        this.catalogItemId = catalogItem;
         this.amount = amount;
     }
 
     public OrderItemDto toModel() {
-        return new OrderItemDto(this.uuid, this.catalogItem.toModel(), this.amount);
+        return new OrderItemDto(this.uuid, this.catalogItemId, this.amount);
     }
 }
