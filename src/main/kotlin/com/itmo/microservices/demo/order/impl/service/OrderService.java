@@ -1,5 +1,6 @@
 package com.itmo.microservices.demo.order.impl.service;
 
+import com.itmo.microservices.demo.order.api.BookingException;
 import com.itmo.microservices.demo.order.api.dto.BookingDto;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.api.dto.OrderStatus;
@@ -57,7 +58,6 @@ public class OrderService implements IOrderService {
             }
             var orderItem = new OrderItemEntity(orderId, itemId, amount);
 
-
             order.getOrderItems().add(orderItem);
 
             orderRepository.save(order);
@@ -77,22 +77,33 @@ public class OrderService implements IOrderService {
             }
             // TODO: provide auth token
             WarehouseApi warehouseApi = new WarehouseApi();
-            //return response I do no how we will use it
             Set failed = warehouseApi.book(orderMapper.toDto(order)).getBody();
-            assert failed != null;
+
+            if (failed == null) {
+                throw new BookingException("No response from warehouse. Try again later");
+            }
+            if (failed.isEmpty()) {
+                order.setStatus(OrderStatus.BOOKED);
+            }
+
             return new BookingDto(orderId, failed);
         } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        } catch (BookingException e) {
+            System.err.println(e.getMessage());
             return null;
         }
     }
 
     @Override
     public boolean startPayment(UUID orderId) {
-        OrderDto orderDto = getOrderById(orderId);
+        var order = orderRepository.getById(orderId);
+        if (order.getStatus() != OrderStatus.BOOKED) {
+            return false;
+        }
 
         PaymentApi paymentApi = new PaymentApi();
-        paymentApi.pay(orderDto);
-        //TODO: change status
+        paymentApi.pay(orderMapper.toDto(order));
 
         return true;
     }
@@ -118,6 +129,7 @@ public class OrderService implements IOrderService {
             if (order.getStatus() != OrderStatus.BOOKED) {
                 return false;
             }
+            //todo: get result from PaymentService -> OK=PAID; Bad_Request=BOOKED
             order.setStatus(OrderStatus.PAID);
         } catch (javax.persistence.EntityNotFoundException e) {
             return false;
