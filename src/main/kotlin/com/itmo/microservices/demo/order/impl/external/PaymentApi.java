@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PaymentApi implements IPaymentApi {
-    private static final String API_URL = "http://77.234.215.138:30019/api/payment/trannsaction";
+    private static final String API_URL = "http://77.234.215.138:30019/api/payment/transaction";
 
     @Override
     public ResponseEntity<String> pay(OrderDto orderDto) {
