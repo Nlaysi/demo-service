@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -12,5 +13,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class BookingDto extends AbstractDto {
     private UUID id;
-    private Set<UUID> failedItems;
+    private Set<UUID> failedItems = new HashSet<>();
+
+    public BookingDto(UUID id) {
+        this.id = id;
+    }
 }

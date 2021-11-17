@@ -3,11 +3,16 @@ package com.itmo.microservices.demo.order.impl.external;
 import com.itmo.microservices.demo.order.api.dto.ItemQuantityRequestDTOJava;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.api.external.IWarehouseApi;
+import com.itmo.microservices.demo.order.impl.entity.BookingAttemptStatus;
+import com.itmo.microservices.demo.order.impl.entity.BookingResponse;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,25 +21,59 @@ import java.util.stream.Collectors;
 
 public class WarehouseApi implements IWarehouseApi {
 
-    private static final String API_URL_PREFIX = "http://77.234.215.138:30019/api/warehouse";
+    private static final String API_URL_PREFIX = "http://localhost:8080/api/warehouse";
 
-    @Override
-    public ResponseEntity<Set> book(OrderDto orderDto) {
-        RestTemplate restTemplate = new RestTemplate();
-        return restTemplate.postForEntity(API_URL_PREFIX + "/book", prepareRequest(orderDto), Set.class);
+    static class BookingHttpResponse {
+        Integer bookingStatus;
+        String message;
     }
 
     @Override
-    public ResponseEntity<String> unbook(OrderDto orderDto) {
+    public BookingResponse bookOrder(OrderDto orderDto) {
+        BookingResponse result = new BookingResponse();
         RestTemplate restTemplate = new RestTemplate();
-        return restTemplate.postForEntity(API_URL_PREFIX + "/unbook", prepareRequest(orderDto), String.class);
+        try {
+            var response = restTemplate.postForEntity(API_URL_PREFIX + "/book", prepareRequest(orderDto), BookingHttpResponse.class);
+            if (response.getBody() != null && response.getBody().bookingStatus == 200) {
+                result.setStatus(BookingAttemptStatus.SUCCESS);
+            } else {
+                result.setStatus(BookingAttemptStatus.FAIL);
+            }
+        } catch (RestClientException e) {
+            System.out.println(e.toString());
+            result.setStatus(BookingAttemptStatus.NO_RESPONSE);
+        }
+        return result;
+    }
+
+    @Override
+    public BookingResponse unbookOrder(OrderDto orderDto) {
+        var currentRequestAttributes = RequestContextHolder.currentRequestAttributes();
+        System.out.println(Arrays.toString(currentRequestAttributes.getAttributeNames(RequestAttributes.SCOPE_SESSION)));
+        var bearerToken = (String) currentRequestAttributes.getAttribute("bearerAuth", RequestAttributes.SCOPE_SESSION);
+        System.out.println(bearerToken);
+
+        BookingResponse result = new BookingResponse();
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            var response = restTemplate.postForEntity(API_URL_PREFIX + "/unbook", prepareRequest(orderDto), BookingHttpResponse.class);
+            if (response.getBody() != null && response.getBody().bookingStatus == 200) {
+                result.setStatus(BookingAttemptStatus.SUCCESS);
+            } else {
+                result.setStatus(BookingAttemptStatus.FAIL);
+            }
+        } catch (RestClientException e) {
+            result.setStatus(BookingAttemptStatus.NO_RESPONSE);
+        }
+        return result;
     }
 
     private HttpEntity<Map<String, List<ItemQuantityRequestDTOJava>>> prepareRequest(OrderDto orderDto) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
         Map<String, List<ItemQuantityRequestDTOJava>> parameters = new HashMap<>();
-        List<ItemQuantityRequestDTOJava> itemList = orderDto.getItemList()
+        List<ItemQuantityRequestDTOJava> itemList = orderDto.getOrderItems()
                 .stream()
                 .map(orderItem ->
                         new ItemQuantityRequestDTOJava(orderItem.getCatalogItemId(),

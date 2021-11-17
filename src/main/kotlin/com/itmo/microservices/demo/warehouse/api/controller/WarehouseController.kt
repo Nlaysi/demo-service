@@ -83,7 +83,7 @@ class WarehouseController(private val service: WarehouseService) {
         return ResponseEntity(ItemResponseDTO(200, "Request executed successfully"), HttpStatus.OK)
     }
 
-    @PutMapping(
+    @PostMapping(
         value = ["/book"],
         consumes = ["application/json"],
         produces = ["application/json"]

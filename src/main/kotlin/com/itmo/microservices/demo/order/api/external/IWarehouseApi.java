@@ -1,13 +1,11 @@
 package com.itmo.microservices.demo.order.api.external;
 
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
-import org.springframework.http.ResponseEntity;
-
-import java.util.Set;
+import com.itmo.microservices.demo.order.impl.entity.BookingResponse;
 
 
 public interface IWarehouseApi {
-    ResponseEntity<Set> book(OrderDto order);
+    BookingResponse bookOrder(OrderDto order);
 
-    ResponseEntity<String> unbook(OrderDto order);
+    BookingResponse unbookOrder(OrderDto order);
 }

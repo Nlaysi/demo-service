@@ -7,6 +7,8 @@ import com.itmo.microservices.demo.order.api.dto.OrderStatus;
 import com.itmo.microservices.demo.order.api.service.IOrderService;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
+import com.itmo.microservices.demo.order.impl.entity.BookingAttemptStatus;
+import com.itmo.microservices.demo.order.impl.entity.BookingResponse;
 import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
 import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
 import com.itmo.microservices.demo.order.impl.external.PaymentApi;
@@ -14,10 +16,13 @@ import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
 import com.itmo.microservices.demo.order.util.mapping.OrderMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService implements IOrderService {
@@ -36,7 +41,8 @@ public class OrderService implements IOrderService {
     public OrderDto createOrder() {
         OrderEntity newOrder = new OrderEntity();
         orderRepository.save(newOrder);
-        return orderMapper.toDto(newOrder);
+        OrderDto result = orderMapper.toDto(newOrder);
+        return result;
     }
 
     @Override
@@ -54,15 +60,15 @@ public class OrderService implements IOrderService {
             var order = orderRepository.getById(orderId);
             if (order.getStatus() == OrderStatus.BOOKED) {
                 WarehouseApi warehouseApi = new WarehouseApi();
-                warehouseApi.unbook(orderMapper.toDto(order));
+                warehouseApi.unbookOrder(orderMapper.toDto(order));
                 order.setStatus(OrderStatus.COLLECTING);
             }
             var orderItem = new OrderItemEntity(orderId, itemId, amount);
 
             order.getOrderItems().add(orderItem);
 
-            orderRepository.save(order);
             orderItemRepository.save(orderItem);
+            orderRepository.save(order);
             return orderMapper.toDto(order);
         } catch (javax.persistence.EntityNotFoundException e) {
             return null;
@@ -70,28 +76,27 @@ public class OrderService implements IOrderService {
     }
 
     @Override
-    public BookingDto book(UUID orderId) {
+    public BookingDto bookOrder(UUID orderId) throws BookingException {
         try {
             var order = orderRepository.getById(orderId);
             if (order.getStatus() != OrderStatus.COLLECTING) {
                 return null;
             }
-            // TODO: provide auth token
             WarehouseApi warehouseApi = new WarehouseApi();
-            Set failed = warehouseApi.book(orderMapper.toDto(order)).getBody();
+            BookingResponse bookingResponse = warehouseApi.bookOrder(orderMapper.toDto(order));
 
-            if (failed == null) {
-                throw new BookingException("No response from warehouse. Try again later");
-            }
-            if (failed.isEmpty()) {
+            if (bookingResponse.getStatus() == BookingAttemptStatus.SUCCESS) {
                 order.setStatus(OrderStatus.BOOKED);
+                orderRepository.save(order);
+                return new BookingDto(orderId);
             }
 
-            return new BookingDto(orderId, failed);
+            if (bookingResponse.getStatus() == BookingAttemptStatus.NO_RESPONSE) {
+                throw new BookingException("Failed to communicate with warehouse service");
+            }
+
+            return new BookingDto(orderId, order.getOrderItems().stream().map(OrderItemEntity::getCatalogItemId).collect(Collectors.toSet()));
         } catch (javax.persistence.EntityNotFoundException e) {
-            return null;
-        } catch (BookingException e) {
-            System.err.println(e.getMessage());
             return null;
         }
     }

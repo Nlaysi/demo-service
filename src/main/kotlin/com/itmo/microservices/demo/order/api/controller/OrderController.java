@@ -1,5 +1,6 @@
 package com.itmo.microservices.demo.order.api.controller;
 
+import com.itmo.microservices.demo.order.api.BookingException;
 import com.itmo.microservices.demo.order.api.dto.BookingDto;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.UUID;
 
@@ -68,7 +70,12 @@ public class OrderController {
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public ResponseEntity<BookingDto> bookOrder(@PathVariable("orderId") UUID orderId) {
-        BookingDto booking = service.book(orderId);
+        BookingDto booking = null;
+        try {
+            booking = service.bookOrder(orderId);
+        } catch (BookingException e) {
+            return new ResponseEntity<>(null, HttpStatus.REQUEST_TIMEOUT);
+        }
         return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
