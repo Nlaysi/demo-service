@@ -1,7 +1,10 @@
 package com.itmo.microservices.demo.payment.api.controller
 
-import com.itmo.microservices.demo.payment.api.model.PaymentModel
-import com.itmo.microservices.demo.payment.api.model.PaymentRequestDto
+import com.itmo.microservices.demo.order.impl.entity.Order
+import com.itmo.microservices.demo.order.api.dto.OrderDto
+import com.itmo.microservices.demo.order.api.dto.OrderItemDto
+import com.itmo.microservices.demo.order.impl.entity.OrderItem
+import com.itmo.microservices.demo.order.impl.service.OrderService
 import com.itmo.microservices.demo.payment.api.model.PaymentSubmissionDto
 import com.itmo.microservices.demo.payment.impl.service.PaymentServiceImpl
 import io.swagger.v3.oas.annotations.Operation
@@ -10,16 +13,15 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import java.util.*
+import kotlin.collections.ArrayList
 
 @RestController
-@RequestMapping("/payment")
-class PaymentController(val paymentService: PaymentServiceImpl) {
+@RequestMapping("/orders")
+class PaymentController(val paymentService: PaymentServiceImpl, val orderService: OrderService) {
 
-    @PostMapping("/transaction")
+    @PostMapping("/{orderId}/payment")
     @Operation(
         summary = "Execute Payment",
         responses = [
@@ -29,8 +31,23 @@ class PaymentController(val paymentService: PaymentServiceImpl) {
         security = [SecurityRequirement(name = "bearerAuth")]
     )
     fun executePayment(
-        @Parameter(hidden = false) @AuthenticationPrincipal @RequestBody dto: PaymentRequestDto
-    ): PaymentSubmissionDto = paymentService.executePayment(dto.toModel())
+        @Parameter(hidden = false)
+        @AuthenticationPrincipal
+        @PathVariable orderId: UUID
+    ): PaymentSubmissionDto {
+        val order = orderService.getOrderById(orderId)
+        val orderItems = order.itemList.keys
+            .toList()
+            .map { OrderItem(it.uuid, it.title, it.price) }
 
-    fun PaymentRequestDto.toModel() = PaymentModel(this.orderId)
+        return paymentService.executePayment(
+            Order(
+                orderId,
+                order.timeCreated,
+                order.status,
+                order.deliveryInfo,
+                orderItems
+            )
+        )
+    }
 }

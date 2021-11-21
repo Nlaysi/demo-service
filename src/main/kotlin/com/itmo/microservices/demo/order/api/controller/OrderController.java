@@ -1,6 +1,6 @@
 package com.itmo.microservices.demo.order.api.controller;
 
-import com.itmo.microservices.demo.order.api.dto.Order;
+import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,7 +29,7 @@ public class OrderController {
                     @ApiResponse(description = "OK", responseCode = "200", content = {@Content}),
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
-    public void createOrder(@RequestBody Order order) {
+    public void createOrder(@RequestBody OrderDto order) {
         service.createOrder(order);
     }
 

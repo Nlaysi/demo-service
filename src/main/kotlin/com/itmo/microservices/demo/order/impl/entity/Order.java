@@ -32,6 +32,20 @@ public class Order {
     @ToString.Exclude
     private List<OrderItem> catalogItems;
 
+    public Order(
+            UUID uuid,
+            LocalDateTime timeCreated,
+            OrderStatus status,
+            Timestamp deliveryInfo,
+            List<OrderItem> catalogItems
+    ) {
+        this.uuid = uuid;
+        this.timeCreated = timeCreated;
+        this.status = status;
+        this.deliveryInfo = deliveryInfo;
+        this.catalogItems = catalogItems;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -43,5 +57,13 @@ public class Order {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public List<OrderItem> getCatalogItems() {
+        return catalogItems;
     }
 }
