@@ -34,7 +34,7 @@ class UserService(
     }
 
     override fun getUserById(id: UUID): UserResponseDto? {
-        val user = userRepository.findById(id)
+        val user = userRepository.findById(id.toString())
 
         return if (!user.isEmpty) {
             UserResponseDto(UUID.fromString(user.get().id), user.get().name)
