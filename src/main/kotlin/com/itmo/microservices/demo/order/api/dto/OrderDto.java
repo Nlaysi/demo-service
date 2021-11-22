@@ -1,6 +1,5 @@
 package com.itmo.microservices.demo.order.api.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,14 +11,21 @@ import java.util.UUID;
 
 @Builder
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
 public class OrderDto extends AbstractDto {
-    private UUID uuid;
-    private LocalDateTime timeCreated;
-    private List<OrderItemDto> orderItems;
-    private OrderStatus status;
-    private Timestamp deliveryInfo;
+    public UUID uuid;
+    public LocalDateTime timeCreated;
+    public List<OrderItemDto> orderItems;
+    public OrderStatus status;
+    public Timestamp deliveryInfo;
+
+    public OrderDto(UUID uuid, LocalDateTime timeCreated, List<OrderItemDto> orderItems, OrderStatus status, Timestamp deliveryInfo) {
+        this.uuid = uuid;
+        this.timeCreated = timeCreated;
+        this.orderItems = orderItems;
+        this.status = status;
+        this.deliveryInfo = deliveryInfo;
+    }
 }
 
 

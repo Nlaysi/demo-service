@@ -94,16 +94,16 @@ public class OrderController {
         return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
-    @PostMapping("/{orderId}/payment")
-    @Operation(
-            summary = "pay",
-            responses = {
-                    @ApiResponse(description = "OK", responseCode = "200"),
-                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
-            security = {@SecurityRequirement(name = "bearerAuth")})
-    public ResponseEntity<String> startPayment(@PathVariable("orderId") UUID orderId) {
-        return new ResponseEntity<>(service.startPayment(orderId) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
-    }
+//    @PostMapping("/{orderId}/payment")
+//    @Operation(
+//            summary = "pay",
+//            responses = {
+//                    @ApiResponse(description = "OK", responseCode = "200"),
+//                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
+//            security = {@SecurityRequirement(name = "bearerAuth")})
+//    public ResponseEntity<String> startPayment(@PathVariable("orderId") UUID orderId) {
+//        return new ResponseEntity<>(service.startPayment(orderId) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
+//    }
 
     @PostMapping("/{orderId}/payment/finalize")
     @Operation(

@@ -33,6 +33,24 @@ public class OrderEntity extends AbstractEntity {
     @ToString.Exclude
     private List<OrderItemEntity> orderItems = new ArrayList<>();
 
+    public OrderEntity(
+            UUID uuid,
+            LocalDateTime timeCreated,
+            OrderStatus status,
+            Timestamp deliveryInfo,
+            List<OrderItemEntity> orderItems
+    ) {
+        this.uuid = uuid;
+        this.timeCreated = timeCreated;
+        this.status = status;
+        this.deliveryInfo = deliveryInfo;
+        this.orderItems = orderItems;
+    }
+
+    public OrderEntity() {
+
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -44,5 +62,13 @@ public class OrderEntity extends AbstractEntity {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public List<OrderItemEntity> getCatalogItems() {
+        return orderItems;
     }
 }
