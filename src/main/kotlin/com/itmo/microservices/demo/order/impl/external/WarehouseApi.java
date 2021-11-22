@@ -5,6 +5,10 @@ import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.api.external.IWarehouseApi;
 import com.itmo.microservices.demo.order.impl.entity.BookingAttemptStatus;
 import com.itmo.microservices.demo.order.impl.entity.BookingResponse;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -14,8 +18,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,10 +25,7 @@ public class WarehouseApi implements IWarehouseApi {
 
     private static final String API_URL_PREFIX = "http://localhost:8080/api/warehouse";
 
-    static class BookingHttpResponse {
-        Integer bookingStatus;
-        String message;
-    }
+
 
     @Override
     public BookingResponse bookOrder(OrderDto orderDto) {
@@ -34,7 +33,7 @@ public class WarehouseApi implements IWarehouseApi {
         RestTemplate restTemplate = new RestTemplate();
         try {
             var response = restTemplate.postForEntity(API_URL_PREFIX + "/book", prepareRequest(orderDto), BookingHttpResponse.class);
-            if (response.getBody() != null && response.getBody().bookingStatus == 200) {
+            if (response.getBody() != null && response.getBody().status == 200) {
                 result.setStatus(BookingAttemptStatus.SUCCESS);
             } else {
                 result.setStatus(BookingAttemptStatus.FAIL);
@@ -57,7 +56,7 @@ public class WarehouseApi implements IWarehouseApi {
         RestTemplate restTemplate = new RestTemplate();
         try {
             var response = restTemplate.postForEntity(API_URL_PREFIX + "/unbook", prepareRequest(orderDto), BookingHttpResponse.class);
-            if (response.getBody() != null && response.getBody().bookingStatus == 200) {
+            if (response.getBody() != null && response.getBody().status == 200) {
                 result.setStatus(BookingAttemptStatus.SUCCESS);
             } else {
                 result.setStatus(BookingAttemptStatus.FAIL);
@@ -68,19 +67,28 @@ public class WarehouseApi implements IWarehouseApi {
         return result;
     }
 
-    private HttpEntity<Map<String, List<ItemQuantityRequestDTOJava>>> prepareRequest(OrderDto orderDto) {
+    private HttpEntity<List<ItemQuantityRequestDTOJava>> prepareRequest(OrderDto orderDto) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
-        Map<String, List<ItemQuantityRequestDTOJava>> parameters = new HashMap<>();
+//        Map<String, List<ItemQuantityRequestDTOJava>> parameters = new HashMap<>();
         List<ItemQuantityRequestDTOJava> itemList = orderDto.getOrderItems()
                 .stream()
                 .map(orderItem ->
                         new ItemQuantityRequestDTOJava(orderItem.getCatalogItemId(),
                                 orderItem.getAmount()))
                 .collect(Collectors.toList());
-        parameters.put("itemList", itemList);
+//        parameters.put("items", itemList);
 
-        return new HttpEntity<>(parameters, headers);
+        return new HttpEntity<>(itemList, headers);
     }
+}
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+class BookingHttpResponse {
+    Integer status;
+    String message;
 }

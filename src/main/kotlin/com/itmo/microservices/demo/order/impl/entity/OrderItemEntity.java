@@ -21,8 +21,7 @@ public class OrderItemEntity extends AbstractEntity {
     private UUID catalogItemId;
     private Integer amount;
 
-    public OrderItemEntity(UUID uuid, UUID catalogItemId, Integer amount) {
-        this.uuid = uuid;
+    public OrderItemEntity(UUID catalogItemId, Integer amount) {
         this.catalogItemId = catalogItemId;
         this.amount = amount;
     }

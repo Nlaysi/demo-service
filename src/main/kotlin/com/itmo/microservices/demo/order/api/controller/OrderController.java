@@ -5,9 +5,11 @@ import com.itmo.microservices.demo.order.api.dto.BookingDto;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +51,7 @@ public class OrderController {
         return new ResponseEntity<>(order, order == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
-    @PutMapping("/{orderId}/items/{itemId}?amount={amount}")
+    @PutMapping("/{orderId}/items/{itemId}")
     @Operation(
             summary = "Put the item in the cart",
             responses = {
@@ -58,7 +60,7 @@ public class OrderController {
             security = {@SecurityRequirement(name = "bearerAuth")})
     public void updateOrder(@PathVariable("orderId") UUID orderId,
                             @PathVariable("itemId") UUID itemId,
-                            @PathVariable("amount") int amount) {
+                            @RequestParam(name = "amount") int amount) {
         service.putItemToOrder(orderId, itemId, amount);
     }
 
@@ -79,7 +81,7 @@ public class OrderController {
         return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
-    @PostMapping("/{orderId}/delivery?slot={slot_in_sec}")
+    @PostMapping("/{orderId}/delivery")
     @Operation(
             summary = "Delivery time selection",
             responses = {
@@ -87,7 +89,7 @@ public class OrderController {
                     @ApiResponse(description = "Something went wrong", responseCode = "400")},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public ResponseEntity<BookingDto> selectDeliveryTime(@PathVariable("orderId") UUID orderId,
-                                                         @PathVariable("slot_in_sec") int seconds) {
+                                                         @RequestParam(name = "slot") int seconds) {
         var booking = service.selectDeliveryTime(orderId, seconds);
         return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }

@@ -63,7 +63,7 @@ public class OrderService implements IOrderService {
                 warehouseApi.unbookOrder(orderMapper.toDto(order));
                 order.setStatus(OrderStatus.COLLECTING);
             }
-            var orderItem = new OrderItemEntity(orderId, itemId, amount);
+            var orderItem = new OrderItemEntity(itemId, amount);
 
             order.getOrderItems().add(orderItem);
 
