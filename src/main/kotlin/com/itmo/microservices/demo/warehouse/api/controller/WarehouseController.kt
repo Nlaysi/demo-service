@@ -252,10 +252,10 @@ class WarehouseController(private val service: WarehouseService) {
         summary = "Compare a items quantity by array of id",
         security = [SecurityRequirement(name = "bearerAuth")]
     )
-    fun compareItemsQuantity(@Valid @RequestBody objects: List<ItemQuantityRequestDTO>?): ResponseEntity<List<ItemQuantityRequestDTO>> {
+    fun compareItemsQuantity(@Valid @RequestBody objects: List<ItemQuantityRequestDTO>): ResponseEntity<List<ItemQuantityRequestDTO>> {
         val itemModels: ArrayList<ItemQuantityRequestDTO> = ArrayList()
         try {
-            for (obj in objects!!){
+            for (obj in objects){
                 val item: WarehouseItem = service.getItemQuantity(obj.id)
                 itemModels.add(ItemQuantityRequestDTO(obj.id, item.amount!! - item.booked!! - obj.amount));
             }
