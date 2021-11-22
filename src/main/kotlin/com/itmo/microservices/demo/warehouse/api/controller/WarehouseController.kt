@@ -246,4 +246,27 @@ class WarehouseController(private val service: WarehouseService) {
 
         return ResponseEntity(itemModels, HttpStatus.OK)
     }
+    
+    @PostMapping(value = ["/compareItemsQuantity"])
+    @Operation(
+        summary = "Compare a items quantity by array of id",
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    fun compareItemsQuantity(@Valid @RequestBody objects: List<ItemQuantityRequestDTO>?): ResponseEntity<List<ItemQuantityRequestDTO>> {
+        val itemModels: ArrayList<ItemQuantityRequestDTO> = ArrayList()
+        try {
+            for (obj in objects!!){
+                val item: WarehouseItem = service.getItemQuantity(obj.id)
+                itemModels.add(ItemQuantityRequestDTO(obj.id, item.amount!! - item.booked!! - obj.amount));
+            }
+        }
+        catch (e: ItemIsNotExistException) {
+            return ResponseEntity( ArrayList(), HttpStatus.NOT_FOUND)
+        }
+        catch (e: Exception) {
+            return ResponseEntity( ArrayList(), HttpStatus.BAD_REQUEST)
+        }
+
+        return ResponseEntity(itemModels, HttpStatus.OK)
+    }
 }
