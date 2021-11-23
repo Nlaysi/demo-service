@@ -7,5 +7,5 @@ import com.itmo.microservices.demo.order.impl.entity.BookingResponse;
 public interface IWarehouseApi {
     BookingResponse bookOrder(OrderDto order);
 
-    BookingResponse unbookOrder(OrderDto order);
+    void unbookOrder(OrderDto order);
 }

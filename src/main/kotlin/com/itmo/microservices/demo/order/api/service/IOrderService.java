@@ -16,8 +16,6 @@ public interface IOrderService {
 
     boolean startPayment(UUID orderId);
 
-    boolean finalizePayment(UUID orderId);
-
     BookingDto bookOrder(UUID orderId) throws BookingException;
 
     BookingDto selectDeliveryTime(UUID orderId, int seconds) throws IOException;

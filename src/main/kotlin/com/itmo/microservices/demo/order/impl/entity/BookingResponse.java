@@ -17,8 +17,4 @@ import java.util.UUID;
 public class BookingResponse {
     BookingAttemptStatus status;
     Set<UUID> failedItems = new HashSet<>();
-
-    public BookingResponse(BookingAttemptStatus status) {
-        this.status = status;
-    }
 }

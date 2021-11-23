@@ -155,14 +155,15 @@ class WarehouseController(private val service: WarehouseService) {
         security = [SecurityRequirement(name = "bearerAuth")]
     )
     fun addItem(@Valid @RequestBody item: CatalogItemModel): ResponseEntity<ItemResponseDTO> {
+        val item = CatalogItem(item.description, item.title, item.price)
         try {
-            service.addItem(CatalogItem(item.description, item.title, item.price))
+            service.addItem(item)
         }
         catch (e: Exception) {
             return ResponseEntity(ItemResponseDTO(400, e.message!!), HttpStatus.BAD_REQUEST)
         }
 
-        return ResponseEntity(ItemResponseDTO(200, "Request executed successfully"), HttpStatus.OK)
+        return ResponseEntity(ItemResponseDTO(200, item.id.toString()), HttpStatus.OK)
     }
 
     @GetMapping("/getItems")

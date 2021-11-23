@@ -16,8 +16,6 @@ import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
 import com.itmo.microservices.demo.order.util.mapping.OrderMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -41,8 +39,7 @@ public class OrderService implements IOrderService {
     public OrderDto createOrder() {
         OrderEntity newOrder = new OrderEntity();
         orderRepository.save(newOrder);
-        OrderDto result = orderMapper.toDto(newOrder);
-        return result;
+        return orderMapper.toDto(newOrder);
     }
 
     @Override
@@ -58,6 +55,7 @@ public class OrderService implements IOrderService {
     public OrderDto putItemToOrder(UUID orderId, UUID itemId, int amount) {
         try {
             var order = orderRepository.getById(orderId);
+
             if (order.getStatus() == OrderStatus.BOOKED) {
                 WarehouseApi warehouseApi = new WarehouseApi();
                 warehouseApi.unbookOrder(orderMapper.toDto(order));
@@ -118,6 +116,7 @@ public class OrderService implements IOrderService {
     public BookingDto selectDeliveryTime(UUID orderId, int seconds) {
         try {
             var order = orderRepository.getById(orderId);
+
             if (order.getStatus() == OrderStatus.BOOKED) {
                 order.setDeliveryInfo(new Timestamp(TimeUnit.SECONDS.toMillis(seconds)));
                 orderRepository.save(order);
@@ -126,20 +125,5 @@ public class OrderService implements IOrderService {
             return null;
         }
         return new BookingDto(orderId, new HashSet<>());
-    }
-
-    @Override
-    public boolean finalizePayment(UUID orderId) {
-        try {
-            var order = orderRepository.getById(orderId);
-            if (order.getStatus() != OrderStatus.BOOKED) {
-                return false;
-            }
-            //todo: get result from PaymentService -> OK=PAID; Bad_Request=BOOKED
-            order.setStatus(OrderStatus.PAID);
-        } catch (javax.persistence.EntityNotFoundException e) {
-            return false;
-        }
-        return true;
     }
 }

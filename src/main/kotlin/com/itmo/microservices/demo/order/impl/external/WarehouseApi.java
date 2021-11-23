@@ -22,10 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WarehouseApi implements IWarehouseApi {
-
     private static final String API_URL_PREFIX = "http://localhost:8080/api/warehouse";
-
-
 
     @Override
     public BookingResponse bookOrder(OrderDto orderDto) {
@@ -39,14 +36,14 @@ public class WarehouseApi implements IWarehouseApi {
                 result.setStatus(BookingAttemptStatus.FAIL);
             }
         } catch (RestClientException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
             result.setStatus(BookingAttemptStatus.NO_RESPONSE);
         }
         return result;
     }
 
     @Override
-    public BookingResponse unbookOrder(OrderDto orderDto) {
+    public void unbookOrder(OrderDto orderDto) {
         var currentRequestAttributes = RequestContextHolder.currentRequestAttributes();
         System.out.println(Arrays.toString(currentRequestAttributes.getAttributeNames(RequestAttributes.SCOPE_SESSION)));
         var bearerToken = (String) currentRequestAttributes.getAttribute("bearerAuth", RequestAttributes.SCOPE_SESSION);
@@ -64,21 +61,18 @@ public class WarehouseApi implements IWarehouseApi {
         } catch (RestClientException e) {
             result.setStatus(BookingAttemptStatus.NO_RESPONSE);
         }
-        return result;
     }
 
     private HttpEntity<List<ItemQuantityRequestDTOJava>> prepareRequest(OrderDto orderDto) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
-//        Map<String, List<ItemQuantityRequestDTOJava>> parameters = new HashMap<>();
         List<ItemQuantityRequestDTOJava> itemList = orderDto.getOrderItems()
                 .stream()
                 .map(orderItem ->
                         new ItemQuantityRequestDTOJava(orderItem.getCatalogItemId(),
                                 orderItem.getAmount()))
                 .collect(Collectors.toList());
-//        parameters.put("items", itemList);
 
         return new HttpEntity<>(itemList, headers);
     }

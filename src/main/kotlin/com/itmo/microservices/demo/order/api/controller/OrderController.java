@@ -5,16 +5,13 @@ import com.itmo.microservices.demo.order.api.dto.BookingDto;
 import com.itmo.microservices.demo.order.api.dto.OrderDto;
 import com.itmo.microservices.demo.order.impl.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.UUID;
 
@@ -72,7 +69,7 @@ public class OrderController {
                     @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public ResponseEntity<BookingDto> bookOrder(@PathVariable("orderId") UUID orderId) {
-        BookingDto booking = null;
+        BookingDto booking;
         try {
             booking = service.bookOrder(orderId);
         } catch (BookingException e) {
@@ -85,34 +82,12 @@ public class OrderController {
     @Operation(
             summary = "Delivery time selection",
             responses = {
-                    @ApiResponse(description = "OK", responseCode = "200"),
-                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
+                    @ApiResponse(description = "OK", responseCode = "200", content = {@Content}),
+                    @ApiResponse(description = "Something went wrong", responseCode = "400", content = {@Content})},
             security = {@SecurityRequirement(name = "bearerAuth")})
     public ResponseEntity<BookingDto> selectDeliveryTime(@PathVariable("orderId") UUID orderId,
                                                          @RequestParam(name = "slot") int seconds) {
         var booking = service.selectDeliveryTime(orderId, seconds);
         return new ResponseEntity<>(booking, booking == null ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
-    }
-
-//    @PostMapping("/{orderId}/payment")
-//    @Operation(
-//            summary = "pay",
-//            responses = {
-//                    @ApiResponse(description = "OK", responseCode = "200"),
-//                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
-//            security = {@SecurityRequirement(name = "bearerAuth")})
-//    public ResponseEntity<String> startPayment(@PathVariable("orderId") UUID orderId) {
-//        return new ResponseEntity<>(service.startPayment(orderId) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
-//    }
-
-    @PostMapping("/{orderId}/payment/finalize")
-    @Operation(
-            summary = "pay",
-            responses = {
-                    @ApiResponse(description = "OK", responseCode = "200"),
-                    @ApiResponse(description = "Something went wrong", responseCode = "400")},
-            security = {@SecurityRequirement(name = "bearerAuth")})
-    public ResponseEntity<String> finalizePayment(@PathVariable("orderId") UUID orderId) {
-        return new ResponseEntity<>(service.finalizePayment(orderId) ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 }
