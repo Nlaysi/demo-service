@@ -30,14 +30,14 @@ class UserService(
         val user = userRepository.save(userModel.toEntity())
         eventLogger.info(UserServiceNotableEvents.I_USER_CREATED, user.name)
 
-        return UserResponseDto(user.id ?: 0, user.name ?: "")
+        return UserResponseDto(UUID.fromString(user.id), user.name)
     }
 
-    override fun getUserById(id: Int): UserResponseDto? {
-        val user = userRepository.findById(id)
+    override fun getUserById(id: UUID): UserResponseDto? {
+        val user = userRepository.findById(id.toString())
 
         return if (!user.isEmpty) {
-            UserResponseDto(user.get().id ?: 0, user.get().name ?: "")
+            UserResponseDto(UUID.fromString(user.get().id), user.get().name)
         } else {
             null
         }
@@ -67,8 +67,8 @@ class UserService(
 
     private fun User.toModel() =
         UserModel(
-            this.name ?: "",
-            this.password ?: "",
-            this.status ?: Status.OFFLINE
+            this.name,
+            this.password,
+            this.status
         )
 }
