@@ -4,6 +4,7 @@ import com.itmo.microservices.demo.order.api.dto.OrderDto
 import com.itmo.microservices.demo.order.api.dto.OrderItemDto
 import com.itmo.microservices.demo.order.impl.service.OrderService
 import com.itmo.microservices.demo.payment.api.model.PaymentSubmissionDto
+import com.itmo.microservices.demo.payment.api.model.UserAccountFinancialLogRecordDto
 import com.itmo.microservices.demo.payment.impl.service.PaymentServiceImpl
 import com.itmo.microservices.demo.warehouse.impl.service.WarehouseService
 import io.swagger.v3.oas.annotations.Operation
@@ -17,7 +18,10 @@ import java.util.*
 
 @RestController
 @RequestMapping("/orders")
-class PaymentController(val paymentService: PaymentServiceImpl, val orderService: OrderService, val warehouseService: WarehouseService) {
+class PaymentController(
+    val paymentService: PaymentServiceImpl,
+    val orderService: OrderService,
+) {
 
     @PostMapping("/{orderId}/payment")
     @Operation(
@@ -31,11 +35,10 @@ class PaymentController(val paymentService: PaymentServiceImpl, val orderService
     fun executePayment(
         @Parameter(hidden = false)
         @AuthenticationPrincipal
-        @PathVariable orderId: UUID
+        @PathVariable orderId: UUID,
     ): PaymentSubmissionDto {
         val order = orderService.getOrderById(orderId)
         val orderItems = order.orderItems
-
         return paymentService.executePayment(
             OrderDto(
                 orderId,
@@ -46,4 +49,19 @@ class PaymentController(val paymentService: PaymentServiceImpl, val orderService
             )
         )
     }
+
+    @GetMapping("/finlog")
+    @Operation(
+        summary = "Get financial log",
+        responses = [
+            ApiResponse(description = "OK", responseCode = "200"),
+            ApiResponse(description = "Retrieving finlog data failed", responseCode = "500", content = [Content()])
+        ],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    fun fetchFinancialRecords(
+        @Parameter(hidden = false)
+        @AuthenticationPrincipal
+        @RequestParam(required = false) orderId: UUID?,
+    ) = paymentService.fetchFinancialRecords(orderId)
 }
