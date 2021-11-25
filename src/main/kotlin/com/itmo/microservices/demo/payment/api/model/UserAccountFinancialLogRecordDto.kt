@@ -8,4 +8,4 @@ data class UserAccountFinancialLogRecordDto(
     val orderId: UUID,
     val paymentTransactionId: UUID,
     val timestamp: Long
-    )
+)
