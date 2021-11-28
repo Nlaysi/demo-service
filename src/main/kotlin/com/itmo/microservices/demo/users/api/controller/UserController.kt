@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
+import java.util.*
 
 
 @RestController
@@ -37,10 +38,10 @@ class UserController(private val userService: IUserService) {
         ],
         security = [SecurityRequirement(name = "bearerAuth")]
     )
-    fun getUserById(@PathVariable(value = "id") id: Int) = userService.getUserById(id)
+    fun getUserById(@PathVariable(value = "id") id: String) = userService.getUserById(UUID.fromString(id))
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "user not found")
 
-    @PostMapping("/auth")
+    @PostMapping("/authentication")
     @Operation(
         summary = "Authenticate",
         responses = [
@@ -53,7 +54,7 @@ class UserController(private val userService: IUserService) {
        return userService.authUser(request)
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/auth/refresh")
     @Operation(
         summary = "Refresh authentication",
         responses = [

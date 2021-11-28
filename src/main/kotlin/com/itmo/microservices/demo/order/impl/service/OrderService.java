@@ -1,97 +1,129 @@
 package com.itmo.microservices.demo.order.impl.service;
 
-import com.itmo.microservices.demo.order.api.dto.Booking;
-import com.itmo.microservices.demo.order.api.dto.CatalogItem;
-import com.itmo.microservices.demo.order.api.dto.Order;
-import com.itmo.microservices.demo.order.api.dto.OrderItem;
+import com.itmo.microservices.demo.order.api.BookingException;
+import com.itmo.microservices.demo.order.api.dto.BookingDto;
+import com.itmo.microservices.demo.order.api.dto.OrderDto;
+import com.itmo.microservices.demo.order.api.dto.OrderStatus;
+import com.itmo.microservices.demo.order.api.service.IOrderService;
 import com.itmo.microservices.demo.order.impl.dao.OrderItemRepository;
 import com.itmo.microservices.demo.order.impl.dao.OrderRepository;
+import com.itmo.microservices.demo.order.impl.entity.BookingAttemptStatus;
+import com.itmo.microservices.demo.order.impl.entity.BookingResponse;
+import com.itmo.microservices.demo.order.impl.entity.OrderEntity;
+import com.itmo.microservices.demo.order.impl.entity.OrderItemEntity;
+import com.itmo.microservices.demo.order.impl.external.PaymentApi;
+import com.itmo.microservices.demo.order.impl.external.WarehouseApi;
+import com.itmo.microservices.demo.order.util.mapping.OrderMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
-public class OrderService implements IOrderService{
-    private final OrderRepository repository;
+public class OrderService implements IOrderService {
+    private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-
-    private static final String API_URL = "http://http://77.234.215.138:30019/api/";
+    private final OrderMapper orderMapper;
 
     @Autowired
-    public OrderService(OrderRepository repository, OrderItemRepository orderItemRepository) {
-        this.repository = repository;
+    public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository, OrderMapper orderMapper) {
+        this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
+        this.orderMapper = orderMapper;
     }
 
     @Override
-    public Order createOrder(Order order) {
-        return new Order();
+    public OrderDto createOrder() {
+        OrderEntity newOrder = new OrderEntity();
+        orderRepository.save(newOrder);
+        return orderMapper.toDto(newOrder);
     }
 
     @Override
-    public Order getOrderById(UUID uuid) {
-        com.itmo.microservices.demo.order.impl.entity.Order orderEntity = repository.getById(uuid);
-
-        // entity.CatalogItem -> dto.CatalogItem
-        List<CatalogItem> dtoItems = null; /*orderEntity.getCatalogItems().stream()
-                .map(item -> new CatalogItem(item.getUuid(), item.getTitle(), item.getDescription(),
-                        item.getPrice(), item.getAmount())).collect(Collectors.toList());*/
-
-        // List<dto.CatalogItem> -> Map<OrderItem, Integer>
-        Map<OrderItem, Integer> itemList = dtoItems.stream()
-                .collect(Collectors.toMap(item -> new OrderItem(item.getUuid(), item.getTitle(), item.getPrice()),
-                        CatalogItem::getAmount));
-
-        return new Order(orderEntity.getUuid(), orderEntity.getTimeCreated(), itemList, orderEntity.getStatus(), orderEntity.getDeliveryInfo());
+    public OrderDto getOrderById(UUID uuid) {
+        try {
+            return orderMapper.toDto(orderRepository.getById(uuid));
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
-    public void putItemToOrder(UUID orderId, UUID itemId, int amount) {
-        Order order = getOrderById(orderId);
-        com.itmo.microservices.demo.order.impl.entity.OrderItem item = orderItemRepository.getById(itemId);
-        OrderItem itemDto = new OrderItem(item.getUuid(), item.getTitle(), item.getPrice());
+    public OrderDto putItemToOrder(UUID orderId, UUID itemId, int amount) {
+        try {
+            var order = orderRepository.getById(orderId);
 
-        order.getItemList().put(itemDto, amount);
+            if (order.getStatus() == OrderStatus.BOOKED) {
+                WarehouseApi warehouseApi = new WarehouseApi();
+                warehouseApi.unbookOrder(orderMapper.toDto(order));
+                order.setStatus(OrderStatus.COLLECTING);
+            }
+            var orderItem = new OrderItemEntity(itemId, amount);
+
+            order.getOrderItems().add(orderItem);
+
+            orderItemRepository.save(orderItem);
+            orderRepository.save(order);
+            return orderMapper.toDto(order);
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
-    public Booking book(UUID orderId) throws IOException {
-        Order order = getOrderById(orderId);
+    public BookingDto bookOrder(UUID orderId) throws BookingException {
+        try {
+            var order = orderRepository.getById(orderId);
+            if (order.getStatus() != OrderStatus.COLLECTING) {
+                return null;
+            }
+            WarehouseApi warehouseApi = new WarehouseApi();
+            BookingResponse bookingResponse = warehouseApi.bookOrder(orderMapper.toDto(order));
 
-        URL url = new URL(API_URL + "warehouse/book");
-        sendRequest(order, url);
+            if (bookingResponse.getStatus() == BookingAttemptStatus.SUCCESS) {
+                order.setStatus(OrderStatus.BOOKED);
+                orderRepository.save(order);
+                return new BookingDto(orderId);
+            }
 
-        return null;
+            if (bookingResponse.getStatus() == BookingAttemptStatus.NO_RESPONSE) {
+                throw new BookingException("Failed to communicate with warehouse service");
+            }
+
+            return new BookingDto(orderId, order.getOrderItems().stream().map(OrderItemEntity::getCatalogItemId).collect(Collectors.toSet()));
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
-    public void selectDeliveryTime(UUID orderId, int seconds) throws IOException {
-        Order order = getOrderById(orderId);
-        order.setDeliveryInfo(new Timestamp(seconds));
-        URL url = new URL(API_URL + "delivery/doDelivery");
-        sendRequest(order, url);
+    public boolean startPayment(UUID orderId) {
+        var order = orderRepository.getById(orderId);
+        if (order.getStatus() != OrderStatus.BOOKED) {
+            return false;
+        }
+
+        PaymentApi paymentApi = new PaymentApi();
+        paymentApi.pay(orderMapper.toDto(order));
+
+        return true;
     }
 
-    private void sendRequest(Order order, URL url) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("POST");
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("order", order.toString());
+    @Override
+    public BookingDto selectDeliveryTime(UUID orderId, int seconds) {
+        try {
+            var order = orderRepository.getById(orderId);
 
-        con.setDoOutput(true);
-        DataOutputStream out = new DataOutputStream(con.getOutputStream());
-        out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
-        out.flush();
-        out.close();
+            if (order.getStatus() == OrderStatus.BOOKED) {
+                order.setDeliveryInfo(new Timestamp(TimeUnit.SECONDS.toMillis(seconds)));
+                orderRepository.save(order);
+            }
+        } catch (javax.persistence.EntityNotFoundException e) {
+            return null;
+        }
+        return new BookingDto(orderId, new HashSet<>());
     }
 }
